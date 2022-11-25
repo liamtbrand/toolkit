@@ -23,7 +23,7 @@ EOL
 
 # Install fail2ban
 apt install -y fail2ban
-cat >/etc/fail2ban/jail.d/ <<EOL
+cat >/etc/fail2ban/jail.d/sshd.local <<EOL
 [sshd]
 enabled = true
 port = ssh
@@ -32,6 +32,7 @@ logpath = /var/log/secure
 maxretry = 3
 bantime = 600
 EOL
+systemctl enable fail2ban
 
 # Install firewall (ufw)
 apt install -y ufw
