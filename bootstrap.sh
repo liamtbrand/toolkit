@@ -17,7 +17,7 @@ username="pi"
 #EOL
 
 # Apply SSH configuration
-cat >/home/${username}/.ssh/known_hosts <<EOL
+cat >/home/${username}/.ssh/authorized_keys <<EOL
 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDGkoH5O6/HcGDjHRdWXwkp3V+RAlmQD5ognmIFMRlJetc0yZp61MZkForqvMFR8q+bS2Gje+Ass/jiljMhA1c5ADCQs6Z1ARnFRemmg19o1qOkyao/R/kf+e5PO54x7sbzYT5oYumLjEL2Gp+7BZcg1cLqEmQG/aC3uCJNT8orS4WPko9PfZKFj6ydEoo/aDudqosv3mI/R40bo6EksScAYDpQvalJ4jE3zphXj0vXCT4bFWi4CAv7F8GSwjN6NUU1Q1uRrDsP4HK4k1S9y3jP08XDLmxFthWUPX7OFVA1yJKMVh5lgjuS5yijK3DjvaV8QZk2YJ5JpuNyp7SquCCV liambrand@Liams-MacBook-Pro.local
 EOL
 
