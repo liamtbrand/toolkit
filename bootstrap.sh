@@ -6,8 +6,9 @@ if [ "$EUID" -ne 0 ]
 fi
 
 # Configuration
-user="pi"
-group="pi"
+read -p "Hostname: " hostname
+read -p "User Name: " user
+read -p "Group Name: " group
 
 #cat >/etc/myconfig.conf <<EOL
 #line 1, ${kernel}
@@ -24,6 +25,7 @@ chmod 600 ${authorized_keys_path}
 chown ${user}:${group} ${authorized_keys_path}
 cat >${authorized_keys_path} <<EOL
 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDGkoH5O6/HcGDjHRdWXwkp3V+RAlmQD5ognmIFMRlJetc0yZp61MZkForqvMFR8q+bS2Gje+Ass/jiljMhA1c5ADCQs6Z1ARnFRemmg19o1qOkyao/R/kf+e5PO54x7sbzYT5oYumLjEL2Gp+7BZcg1cLqEmQG/aC3uCJNT8orS4WPko9PfZKFj6ydEoo/aDudqosv3mI/R40bo6EksScAYDpQvalJ4jE3zphXj0vXCT4bFWi4CAv7F8GSwjN6NUU1Q1uRrDsP4HK4k1S9y3jP08XDLmxFthWUPX7OFVA1yJKMVh5lgjuS5yijK3DjvaV8QZk2YJ5JpuNyp7SquCCV liambrand@Liams-MacBook-Pro.local
+no-pty,no-X11-forwarding,permitopen="localhost:9999",command="/bin/echo do-not-send-commands" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAWiC5D4tW1E1mQfqtJmA/xmS6RgXnkboJ9WEiU48QgK frozen@raspberrypi
 EOL
 
 cat >/etc/ssh/sshd_config <<EOL
@@ -117,7 +119,7 @@ UsePAM yes
 #AllowAgentForwarding yes
 #AllowTcpForwarding yes
 #GatewayPorts no
-X11Forwarding yes
+X11Forwarding no
 #X11DisplayOffset 10
 #X11UseLocalhost yes
 #PermitTTY yes
