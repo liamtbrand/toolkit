@@ -62,4 +62,6 @@ toolkit () {
 	esac
 }
 
+__private_toolkit_modules_load
+
 alias tk=toolkit
