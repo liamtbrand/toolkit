@@ -17,10 +17,10 @@ __private_toolkit_git() {
 	$GIT_PATH --git-dir="$TOOLKIT_REPO_PATH/.git" --work-tree="$TOOLKIT_REPO_PATH" "${@:1}"
 }
 
-TOOLKIT_MODS_LIST=()
+TOOLKIT_TOOLS_LIST=()
 
 __private_toolkit_source_module() {
-	[ -f "$TOOLKIT_REPO_PATH/$1" ] && source "$TOOLKIT_REPO_PATH/$1" && TOOLKIT_MODS_LIST+=("$1") || echo "[toolkit]: Unable to find module $1"
+	[ -f "$TOOLKIT_REPO_PATH/tools/$1" ] && source "$TOOLKIT_REPO_PATH/tools/$1" && TOOLKIT_TOOLS_LIST+=("$1") || echo "[toolkit]: Unable to find tool $1"
 }
 
 __private_toolkit_modules_load() {
