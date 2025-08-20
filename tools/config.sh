@@ -66,7 +66,6 @@ __private_config_modules_load () {
 	__private_source_module "haskell.sh"
 
 	# Tools
-	__private_source_module "autosync.sh"
 	__private_source_module "git-annex.sh"
 	__private_source_module "obsidian.sh"
 	__private_source_module "tailscale.sh"

@@ -29,6 +29,7 @@ __private_toolkit_modules_load() {
 	__private_toolkit_source_module "homelab.sh"
 	__private_toolkit_source_module "notes.sh"
 	__private_toolkit_source_module "repos.sh"
+	__private_toolkit_source_module "autosync.sh"
 }
 
 __private_toolkit_description() {
