@@ -25,7 +25,7 @@ notes () {
 }
 
 # This binds the help page to open in neovim by pressing o.
-alias o="cd '${NOTES_REPOSITORY_PATH}'; $EDITOR Help.md; cd - >/dev/null"
+alias o="cd '${NOTES_REPOSITORY_PATH}'; $EDITOR notes.md; cd - >/dev/null"
 
 # Obsidian
 alias help="cd '${NOTES_REPOSITORY_PATH}'; $EDITOR Help.md; cd - >/dev/null"
