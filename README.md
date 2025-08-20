@@ -1,17 +1,14 @@
-# Toolkit for Linux
+# Toolkit
 
-# Image raspberry pi
-- Set public key based authentication over SSH only
-- Set account user and password (non standard)
+This is my toolkit repository.
+These are useful scripts for configuring and managing systems.
 
-# Open non standard port in place of port 22 and forward to raspberry pi
+# Installation
 
-
-## Setup crontab job to report ip address?
-IP Address needs to be reported somewhere in case it changes.
-
-## Setup reverse ssh tunnel to link nodes together?
-
-## 2FA Setup
-See [https://github.com/google/google-authenticator-libpam/blob/master/README.md](https://github.com/google/google-authenticator-libpam/blob/master/README.md).
+```shell
+cd ~
+git clone git@github.com:liamtbrand/toolkit.git
+cd toolkit
+./toolkit.sh
+```
 

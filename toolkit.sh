@@ -51,10 +51,19 @@ __private_toolkit_description() {
 	echo "  delta"
 }
 
+__private_toolkit_init() {
+	if ! grep -q "source ~/toolkit/toolkit.sh" ~/.config/zsh/.zshrc; then
+		echo "source ~/toolkit/toolkit.sh" >> ~/.config/zsh/.zshrc
+	fi
+}
+
 toolkit () {
 	case "$1" in
 		"git")
 			__private_toolkit_git "${@:2}"
+			;;
+		"init")
+			__private_toolkit_init
 			;;
 		*)
 			__private_toolkit_description
@@ -62,6 +71,7 @@ toolkit () {
 	esac
 }
 
+__private_toolkit_init
 __private_toolkit_modules_load
 
 alias tk=toolkit
