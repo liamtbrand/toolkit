@@ -67,7 +67,6 @@ __private_config_modules_load () {
 
 	# Tools
 	__private_source_module "git-annex.sh"
-	__private_source_module "obsidian.sh"
 	__private_source_module "tailscale.sh"
 	__private_source_module "network.sh"
 	__private_source_module "aliases.sh"
