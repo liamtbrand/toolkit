@@ -15,12 +15,12 @@
 __private_backup_check_dependencies() {
     if ! command -v date &> /dev/null; then
 	echo "Error: 'date' is not installed. Aborting script." >&2
-	exit 1
+	return 1
     fi
 
     if ! command -v rsync &> /dev/null; then
 	echo "Error: 'rsync' is not installed. Aborting script." >&2
-	exit 1
+	return 1
     fi
 }
 
@@ -28,22 +28,13 @@ __private_backup_do_incremental_backup() {
 
     __private_backup_check_dependencies
 
-    # Check arguments to script
-    if [ "$#" -ne 2 ]; then
-	echo "Error: Exactly two arguments are required."
-	echo "Usage: $0 source_path destination_path"
-	echo "Note: Source path is the root directory to back up."
-	echo "      Destination path will create a directory structure to store the backups."
-	exit 1
-    fi
-
     local DATE_TAG=`date "+%Y-%m-%dT%H-%M-%S"`
 
     local SOURCE_PATH="$1"
     local DESTINATION_PATH="$2"
 
     if [ ! -d "$DESTINATION_PATH" ]; then
-	mkdir -p "$DESTINATION_PATH" && echo "Directory created." || echo "Error: Can't create directory." && exit 1
+	mkdir -p "$DESTINATION_PATH" && echo "Directory created." || echo "Error: Can't create directory." && return 1
     fi
 
     # TODO: Change this since it's now wrong..
@@ -78,5 +69,14 @@ EOF
 }
 
 backup() {
+    # Check arguments to script
+    if [ "$#" -ne 2 ]; then
+	echo "Backup tool. Make incremental backups."
+	echo "Usage: backup source_path destination_path"
+	echo "source_path      - Source path is the root node of the directory tree to backup."
+	echo "destination_path - Destination path will create a directory structure to store the backups."
+	return 1
+    fi
+
     __private_backup_do_incremental_backup "${@:1}"
 }
