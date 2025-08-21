@@ -31,6 +31,7 @@ __private_toolkit_modules_load() {
 	__private_toolkit_source_module "repos.sh"
 	__private_toolkit_source_module "autosync.sh"
 	__private_toolkit_source_module "exifdiff.sh"
+	__private_toolkit_source_module "backup.sh"
 }
 
 __private_toolkit_description() {
