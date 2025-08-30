@@ -33,17 +33,19 @@ __private_backup_do_incremental_backup() {
     local SOURCE_PATH="$1"
     local DESTINATION_PATH="$2"
 
+    # NOTE: This has to be run on the target machine?
+    # Can I make it so it works across the network?
+    # Target should be able to be a remote machine.
+    # Pull backups vs push backups.
     if [ ! -d "$DESTINATION_PATH" ]; then
+	# Currently this just works for pull backups.
+	# Would be nice if it worked for push backups.
+	# NOTE: Pull backups seem safer from an access point of view.
+	# Maybe its fine to leave this as it is?
 	mkdir -p "$DESTINATION_PATH" && echo "Directory created." || echo "Error: Can't create directory." && return 1
     fi
 
-    # TODO: Change this since it's now wrong..
-    # Switch to this directory...
-    cd "$(dirname "$0")"
-    # copy the script into the destination so the user can understand how the backup data was created.
-    cp "$0" "$DESTINATION_PATH/make-rsync-incremental-backup.sh"
-
-    echo "Generated backups using backup script. See Liam's Toolkit." > "$DESTINATION_PATH/README.md"
+    [ ! -e "$DESTINATION_PATH/README.md" ] && echo "Generated backups using backup script. See Liam's Toolkit. https://github.com/liamtbrand/toolkit" > "$DESTINATION_PATH/README.md"
 
     cat > "$DESTINATION_PATH/rsync_ignore" << EOF
 .DS_Store
@@ -75,6 +77,8 @@ backup() {
 	echo "Usage: backup source_path destination_path"
 	echo "source_path      - Source path is the root node of the directory tree to backup."
 	echo "destination_path - Destination path will create a directory structure to store the backups."
+	echo "The backup tool makes a pull based incremental backup."
+	echo "Push based backups can be configured by having the client reach out to the backup server and request a pull"
 	return 1
     fi
 
