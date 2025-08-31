@@ -64,6 +64,7 @@ EOF
 	--log-file="$DESTINATION_PATH/backup-$DATE_TAG.log" \
 	--exclude-from="$DESTINATION_PATH/rsync_ignore" \
 	--rsync-path="sudo rsync" \
+	"${@:3}" \
 	"$SOURCE_PATH" "$DESTINATION_PATH/backup-$DATE_TAG"
 
     rm -f "$DESTINATION_PATH/latest"
@@ -72,7 +73,7 @@ EOF
 
 backup() {
     # Check arguments to script
-    if [ "$#" -ne 2 ]; then
+    if [ "$#" -lt 2 ]; then
 	echo "Backup tool. Make incremental backups."
 	echo "Usage: backup source_path destination_path"
 	echo "source_path      - Source path is the root node of the directory tree to backup."
