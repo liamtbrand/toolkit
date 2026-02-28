@@ -2,6 +2,10 @@
 
 REPOS_PATHS_FILE=~/.config/repos/paths
 
+# The ignore file lists out paths to ignore when processing repos
+# TODO: Enable this
+REPOS_IGNORE_FILE=~/.config/repos/ignore
+
 # === Helper Functions ===
 
 __private_repos_get_rel_path () {
@@ -64,10 +68,17 @@ __private_repos_find () {
 	echo ""
 	known=()
 	unknown=()
+
+	known_to_mr=()
+	unknown_to_mr=()
+	local MR_FILE="$HOME/.mrconfig"
 	
 	for repo in "${found[@]}"; do
 		rel_path="$(__private_repos_get_rel_path "$repo")"
 		grep -qx "$rel_path" "$REPOS_PATHS_FILE" && known+=("$rel_path") || unknown+=("$rel_path")
+
+		mr_path="${rel_path:2}"
+		grep -qx "$mr_path" "$MR_FILE" && known_to_mr+=("$rel_path") || unknown_to_mr+=("$rel_path")
 	done
 
 	echo "known:"
@@ -80,6 +91,15 @@ __private_repos_find () {
 		echo "	$repo"
 	done
 
+	echo "known_to_mr:"
+	for repo in "${known_to_mr[@]}"; do
+		echo "	$repo"
+	done
+
+	echo "unknown_to_mr:"
+	for repo in "${unknown_to_mr[@]}"; do
+		echo "	$repo"
+	done
 
 	# TODO: Show repos that are already registered.
 }
@@ -245,6 +265,58 @@ __private_repos_fsck () {
 	done < "$REPOS_PATHS_FILE"
 }
 
+__private_repos_help () {
+	echo "Repos tool. Show the status of all the repos on the system."
+	echo "Repositories are stored as a list of paths in: ${REPOS_PATHS_FILE/#$HOME/~}"
+	echo "Use this tool to keep repositories fully in sync with upstream."
+	echo ""
+	echo "repos add <path>     - Add a repository to the repos list"
+	echo "repos find           - Find repos nearby (searches 3 levels deep in current directory)"
+	echo "repos list           - List repos in the repository list"
+	echo "repos goto           - Go to one of the repos. Select using fzf."
+	echo "repos status         - Show the status of all the registered repositories"
+	echo ""
+}
+
+__private_repos_audit_policy_origin_required () {
+	echo "Policy: All repositories have an origin remote set."
+	local repo="$1"
+}
+
+__private_repos_audit_policy_origin_reachable () {
+	echo "Policy: All origin remotes are reachable."
+	local repo="$1"
+}
+
+__private_repos_audit_policy_all_repos_are_registered () {
+	echo "Policy: All repositories are registered with the repos tool."
+
+	# Find repositories on system...
+	# Check these are all registered with the repos tool...
+	# Report anything that isn't registered.
+
+	
+}
+
+__private_repos_audit() {
+	echo "Running git repo audit..."
+
+	# Audit registration policies
+	__private_repos_audit_policy_all_repos_are_registered
+
+	# Audit registered repositories
+	while IFS= read -r; do
+		# Read path to repo
+		local repo="$REPLY"
+		local repo="{$repo/#\~/$HOME}"
+		# TODO: Abort if repo path isn't correct?
+
+		# Check compliance against policies
+		__private_repos_audit_policy_origin_required "$repo"
+		__private_repos_audit_policy_origin_reachable "$repo"
+	done < "$REPOS_PATHS_FILE"
+}
+
 repos () {
 	case "$1" in
 		"find")
@@ -268,17 +340,14 @@ repos () {
 		"status")
 			__private_repos_status "${@:2}"
 			;;
+		"audit")
+			__private_repos_audit
+			;;
+		"help")
+			__private_repos_help "${@:2}"
+			;;
 		*)
-			echo "Repos tool. Show the status of all the repos on the system."
-			echo "Repositories are stored as a list of paths in: ${REPOS_PATHS_FILE/#$HOME/~}"
-			echo "Use this tool to keep repositories fully in sync with upstream."
-			echo ""
-			echo "repos add <path>     - Add a repository to the repos list"
-			echo "repos find           - Find repos nearby (searches 3 levels deep in current directory)"
-			echo "repos list           - List repos in the repository list"
-			echo "repos goto           - Go to one of the repos. Select using fzf."
-			echo "repos status         - Show the status of all the registered repositories"
-			echo ""
+			__private_repos_help "${@:2}"
 			;;
 	esac
 }
