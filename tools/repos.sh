@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 # === CONFIG SETTINGS ===
 
 REPOS_PATHS_FILE=~/.config/repos/paths

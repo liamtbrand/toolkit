@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 # Manage notes
 # Notes are by default at ~/notes.

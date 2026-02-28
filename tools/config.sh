@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Config tool to manage and update shell configuration
 # Used to manage my dotfiles - general config
