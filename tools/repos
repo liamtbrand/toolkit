@@ -4,6 +4,14 @@ set -euo pipefail
 # Git repository management tool
 # Use this tool to manage git repositories on your machine.
 
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+LIB_PATH="$SCRIPT_DIR/../libraries/helpers.sh"
+if [[ ! -f "$LIB_PATH" ]] ; then
+	echo "FATAL: Helper library not found at $LIB_PATH"
+	exit 1
+fi
+source "$LIB_PATH"
+
 # Preconditions
 #__private_repos_assert_dependencies() {
 #	command -v git >/dev/null 2>&1 || { echo >&2 "Error: Git is not installed."; exit 1 }
@@ -48,64 +56,12 @@ __private_repos_get_abs_path () {
 
 _repo_is_inaccessible () {
 	repo="$1"
-	if ! (cd "$repo" 2>/dev/null) ; then
-		return 0
-	else
-		return 1
-	fi
+	return $(directory_is_inaccessible "$repo")
 }
 
 CLEAN_TAG="\033[32mCLEAN\033[0m"
 DIRTY_TAG="\033[31mDIRTY\033[0m"
 WARN_TAG="WARN "
-
-ask_yes_no () {
-	while true; do
-		# Note: /dev/tty redirect important:
-		# This could be inside another read while loop...
-		read -r -p "$1 [y/n]: " yn < /dev/tty
-		case $yn in
-			[Yy][Ee][Ss]|[Yy] ) return 0;;
-			[Nn][Oo]|[Nn] ) return 1;;
-			*) echo "Please answer yes or no.";;
-		esac
-	done
-}
-
-_parent_of () {
-	repo="$1"
-	echo "$(dirname -- "$repo")"
-}
-
-_drop_to_shell () {
-	path="$1"
-	cd "$path"
-	exec bash --login
-}
-
-_drop_to_interactive_subshell () {
-	path="$1"
-	echo "Dropping you into an interactive subshell at $path."
-	echo "When you're finished exploring, type: exit"
-	cd "$path"
-	PS1="(subshell) \w \$ " $SHELL -i || true
-	echo "Aborting parent script. This is for sanity."
-	exit 0
-}
-
-_offer_drop_to_shell () {
-	path="$1"
-	if ask_yes_no "Do you want to drop to shell at $path ?" ; then
-		_drop_to_shell "$path"
-	fi
-}
-
-_offer_drop_to_interactive_subshell () {
-	path="$1"
-	if ask_yes_no "Do you want to drop to an interactive subshell at $path ?" ; then
-		_drop_to_interactive_subshell "$path"
-	fi
-}
 
 # === Commands ===
 
@@ -259,9 +215,6 @@ __private_repos_status_of_repo () {
 		_offer_drop_to_interactive_subshell "$(_parent_of "$repo")"
 		return
 	fi
-
-	echo "Still running??"
-	return
 	
 	#skip_ok=false
 	#if [ "$2" = "--skip-ok" ]; then
@@ -323,6 +276,7 @@ __private_repos_status_of_repo () {
 
 		if [ ${#remotes[@]} -eq 0 ]; then
 			printf "\033[31mwarn\033[0m No remotes. You should configure an upstream remote.\n"
+			_offer_drop_to_interactive_subshell "$repo"
 			return # Exit early and start processing next item
 		fi
 
