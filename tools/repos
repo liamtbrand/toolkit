@@ -26,15 +26,85 @@ REPOS_IGNORE_FILE=$HOME/.config/repos/ignore
 
 __private_repos_get_rel_path () {
 	# $1 : relative filename
-	abs_path="$(cd "$(dirname -- "$1")" && pwd)/$(basename -- "$1")"
-	rel_path="~/${abs_path#$HOME/}"	
+	path="$1"
+	# Get the absolute path
+	abs_path=$(readlink -f -- "$path")
+	#abs_path="$(cd "$(dirname -- "$path")" && pwd)/$(basename -- "$path")"
+	# Only prefix with ~ if the path is actually inside $HOME
+	if [[ "$abs_path" == "$HOME"* ]]; then
+		# Strip $HOME and prefix with ~
+		rel_path="\~/${abs_path#$HOME/}"
+	fi
+	# Clean up trailing slashes
 	rel_path="${rel_path%/}"
 	echo "$rel_path"
 }
 
 __private_repos_get_abs_path () {
-	abs_path="$(cd "$(dirname -- "$1")" && pwd)/$(basename -- "$1")"
+	path="$1"
+	abs_path="$(cd "$(dirname -- "$path")" && pwd)/$(basename -- "$path")"
 	echo "$abs_path"
+}
+
+_repo_is_inaccessible () {
+	repo="$1"
+	if ! (cd "$repo" 2>/dev/null) ; then
+		return 0
+	else
+		return 1
+	fi
+}
+
+CLEAN_TAG="\033[32mCLEAN\033[0m"
+DIRTY_TAG="\033[31mDIRTY\033[0m"
+WARN_TAG="WARN "
+
+ask_yes_no () {
+	while true; do
+		# Note: /dev/tty redirect important:
+		# This could be inside another read while loop...
+		read -r -p "$1 [y/n]: " yn < /dev/tty
+		case $yn in
+			[Yy][Ee][Ss]|[Yy] ) return 0;;
+			[Nn][Oo]|[Nn] ) return 1;;
+			*) echo "Please answer yes or no.";;
+		esac
+	done
+}
+
+_parent_of () {
+	repo="$1"
+	echo "$(dirname -- "$repo")"
+}
+
+_drop_to_shell () {
+	path="$1"
+	cd "$path"
+	exec bash --login
+}
+
+_drop_to_interactive_subshell () {
+	path="$1"
+	echo "Dropping you into an interactive subshell at $path."
+	echo "When you're finished exploring, type: exit"
+	cd "$path"
+	PS1="(subshell) \w \$ " $SHELL -i || true
+	echo "Aborting parent script. This is for sanity."
+	exit 0
+}
+
+_offer_drop_to_shell () {
+	path="$1"
+	if ask_yes_no "Do you want to drop to shell at $path ?" ; then
+		_drop_to_shell "$path"
+	fi
+}
+
+_offer_drop_to_interactive_subshell () {
+	path="$1"
+	if ask_yes_no "Do you want to drop to an interactive subshell at $path ?" ; then
+		_drop_to_interactive_subshell "$path"
+	fi
 }
 
 # === Commands ===
@@ -137,8 +207,7 @@ __private_repos_list () {
 # Show the status of the registered repositories.
 __private_repos_status_long () {
 
-	while IFS= read -r; do
-		repo="$REPLY"
+	while IFS= read -r repo <&3; do
 		repo="${repo/#\~/$HOME}"  # Replace ~ with $HOME
 		echo ""
 		printf "\\033[36m=== %s ===\\033[0m" "$repo"
@@ -168,7 +237,7 @@ __private_repos_status_long () {
 		#echo "What is everything I'm working on?"
 		#echo "$(git -C "$repo" branch -vv)"
 		#echo ""
-	done < "$REPOS_PATHS_FILE"	
+	done 3< "$REPOS_PATHS_FILE"	
 }
 
 __private_repos_status_of_repo () {
@@ -184,6 +253,15 @@ __private_repos_status_of_repo () {
 	local repo="$1"
 	#echo "$repo"
 	#echo "args: ${@:1}"
+
+	if _repo_is_inaccessible "$repo" ; then
+		echo "Repo $repo is inaccessible."
+		_offer_drop_to_interactive_subshell "$(_parent_of "$repo")"
+		return
+	fi
+
+	echo "Still running??"
+	return
 	
 	#skip_ok=false
 	#if [ "$2" = "--skip-ok" ]; then
@@ -220,16 +298,20 @@ __private_repos_status_of_repo () {
 	if [ -n "$changes" ]; then
 		is_clean=false
 	fi
-	
-	local remotes=($(git -C "$repo" remote))
-	if [ -z "$remotes" ]; then
+
+	local remotes=()
+	while IFS= read -r line; do
+		remotes+=("$line")
+	done < <(git -C "$repo" remote 2>/dev/null || true)
+
+	if [ ${#remotes[@]} -eq 0 ]; then
 		is_clean=false # no remotes. mark dirty ? need to show this isn't in a good state.
 	fi
 
 	if [ $dirty_only = false ] || [ $is_clean = false ]; then
 
 		local clean_status=""
-		clean_status=$($is_clean && printf "\033[32mCLEAN\033[0m" || printf "\033[31mDIRTY\033[0m")
+		clean_status=$($is_clean && printf "$CLEAN_TAG" || printf "$DIRTY_TAG")
 		echo "$clean_status $repo"
 
 		# Begin processing remote changes. Compare branches with what is on the various remotes.
@@ -239,8 +321,9 @@ __private_repos_status_of_repo () {
 			git -C "$repo" fetch --all
 		fi
 
-		if [ -z "$remotes" ]; then
-			printf "\033[31mwarn\033[0m No remotes. You should configure an upstream remote."	
+		if [ ${#remotes[@]} -eq 0 ]; then
+			printf "\033[31mwarn\033[0m No remotes. You should configure an upstream remote.\n"
+			return # Exit early and start processing next item
 		fi
 
 		for remote in "${remotes[@]}"; do
@@ -249,7 +332,7 @@ __private_repos_status_of_repo () {
 			commits="$(git -C "$repo" log --branches --not --remotes --oneline --simplify-by-decoration --decorate --graph)"
 
 			if [ -n "$commits" ]; then
-				printf "- remote: %s is \033[31mmissing\033[0m:" "$remote"
+				printf "\- remote: %s is \033[31mmissing\033[0m:" "$remote"
 				echo "$commits"
 			fi	
 
@@ -269,12 +352,11 @@ __private_repos_status_of_repo () {
 
 __private_repos_status () {
 	local counter=0
-	while IFS= read -r; do
-		local repo="$REPLY"
+	while IFS= read -r repo <&3; do
 		local repo="${repo/#\~/$HOME}"
 		__private_repos_status_of_repo "$repo" "$@"
 		counter=$((counter + 1))
-	done < "$REPOS_PATHS_FILE"
+	done 3< "$REPOS_PATHS_FILE"
 
 	echo ""
 	echo "Done. Reported on the status of $counter repos."
@@ -319,24 +401,12 @@ __private_repos_unknown_command () {
 __private_repos_audit_policy_origin_required () {
 	repo="$1"
 	local REPO_URL=""
-	REPO_URL="$(git -C "$repo" config --get remote.origin.url)"
+	# Note: || true allows the script to continue even if the subshell errors
+	REPO_URL="$(git -C "$repo" config --get remote.origin.url || true)"
 	if [ -z "$REPO_URL" ] ; then
 		echo "Warning: Policy violation. Repo: $repo does not have an origin remote set."
 		echo "Policy: All repositories have an origin remote set."
 	fi
-}
-
-ask_yes_no () {
-	while true; do
-		# Note: /dev/tty redirect important:
-		# This could be inside another read while loop...
-		read -r -p "$1 [y/n]: " yn < /dev/tty
-		case $yn in
-			[Yy][Ee][Ss]|[Yy] ) return 0;;
-			[Nn][Oo]|[Nn] ) echo "Aborted."; return 1;;
-			*) echo "Please answer yes or no.";;
-		esac
-	done
 }
 
 __private_repos_audit_policy_all_repos_are_registered_check_repo_is_registered () {
@@ -384,7 +454,31 @@ __private_repos_audit_policy_all_paths_in_paths_file_are_absolute () {
 	done < "$REPOS_PATHS_FILE"
 }
 
+# default settings
+VERBOSE=false
+
+_parse_arguments () {
+	while [[ $# -gt 0 ]]; do
+		case "$1" in
+			-v|--verbose)
+				VERBOSE=true
+				shift
+				;;
+			-h|--help)
+				echo "Usage: repos audit [--verbose]"
+				exit 0
+				;;
+			*)
+				echo "Unknown option: $1"
+				exit 1
+				;;
+		esac
+	done
+}
+
 repos_audit () {
+	_parse_arguments "$@"
+
 	echo "Running git repo audit..."
 
 	#__private_repos_audit_policy_all_paths_in_paths_file_are_absolute
@@ -405,7 +499,15 @@ repos_audit () {
 			continue
 		fi
 
-		echo "Evaluating: $repo"
+		if [[ "$VERBOSE" = true ]] ; then
+			echo "Evaluating: $repo"
+		fi
+
+		# Check we can actuall change to this location...
+		if _repo_is_inaccessible "$repo" ; then
+			echo "Warning: Repository $repo is inaccessible. Did it move? Skipping..."
+			continue
+		fi
 
 		# Check compliance against policies
 		__private_repos_audit_policy_origin_required "$repo"
@@ -438,7 +540,7 @@ repos () {
 			__private_repos_status "${@:2}"
 			;;
 		"audit")
-			repos_audit
+			repos_audit "${@:2}"
 			;;
 		"help")
 			__private_repos_help "${@:2}"
