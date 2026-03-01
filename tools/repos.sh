@@ -7,7 +7,7 @@ REPOS_PATHS_FILE=~/.config/repos/paths
 
 # The ignore file lists out paths to ignore when processing repos
 # TODO: Enable this
-REPOS_IGNORE_FILE=~/.config/repos/ignore
+# REPOS_IGNORE_FILE=~/.config/repos/ignore
 
 # === Helper Functions ===
 
@@ -34,7 +34,7 @@ __private_repos_fetch () {
 
 		echo "\\033[36m=== $repo ===\\033[0m"
 
-		echo "$(git -C "$repo" fetch --dry-run --verbose)"
+		git -C "$repo" fetch --dry-run --verbose
 	done < "$REPOS_PATHS_FILE"
 }
 
@@ -121,10 +121,10 @@ __private_repos_status_long () {
 		echo ""
 		echo "\\033[36m=== $repo ===\\033[0m"
 
-		echo "$(git -C "$repo" remote -v)"
+		git -C "$repo" remote -v
 
 		# NOTE: Not clear if the simplify-by-decoration flag here is appropriate. Maybe it will miss things?
-		echo "$(git -C "$repo" log --branches --not --remotes --oneline --simplify-by-decoration --decorate --graph)"
+		git -C "$repo" log --branches --not --remotes --oneline --simplify-by-decoration --decorate --graph
 		#[ -z "$local_only" ] && echo "$local_only" || true
 		
 		#echo "branches:"
@@ -135,7 +135,7 @@ __private_repos_status_long () {
 		#echo "$(git -C "$repo" remote -v)"
 		#echo ""
 		echo "status:"
-		echo "$(git -C "$repo" status --short --branch)"
+		git -C "$repo" status --short --branch
 		echo ""
 		#echo "What just happened?"
 		#echo "$(git -C "$repo" log --graph -3 --oneline)"
@@ -191,8 +191,9 @@ __private_repos_status_of_repo () {
 
 
 	# Process the local changes first. This tells us if we have a dirty or clean repo.
-	
-	local changes="$(git -C "$repo" status --porcelain)"
+
+	local changes=""
+	changes="$(git -C "$repo" status --porcelain)"
 	local is_clean=true	
 	if [ -n "$changes" ]; then
 		is_clean=false
@@ -205,7 +206,8 @@ __private_repos_status_of_repo () {
 
 	if [ $dirty_only = false ] || [ $is_clean = false ]; then
 
-		local clean_status=$($is_clean && echo "\033[32mCLEAN\033[0m" || echo "\033[31mDIRTY\033[0m")
+		local clean_status=""
+		clean_status=$($is_clean && echo "\033[32mCLEAN\033[0m" || echo "\033[31mDIRTY\033[0m")
 		echo "$clean_status $repo"
 
 		# Begin processing remote changes. Compare branches with what is on the various remotes.
