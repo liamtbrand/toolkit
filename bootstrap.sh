@@ -30,6 +30,10 @@ fi
 # Add tools to the path
 export PATH="$HOME/toolkit/tools:$PATH"
 
+# Enable config via legacy...
+# TODO: Update how the config system is bootstrapped.
+source "$HOME/toolkit/tools/config.sh"
+
 # Always try initializing the toolkit
 if ! grep -q "source ~/toolkit/bootstrap.sh" ~/.config/zsh/.zshrc; then
 	echo "source ~/toolkit/bootstrap.sh" >> ~/.config/zsh/.zshrc
