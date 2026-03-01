@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# This audit tool is for auditing things on machines
+#
+# Includes a variety of utilities like:
+# - File permissions
+# - Minecraft servers
+# - Git repos
+# - Configuration files
+#
+# Some of these options invoke accompanying tools
+# and / or scripts to do the auditing.
+# 
+# TODO: Write this.
+
+audit_help () {
+	echo "Audit tool. Audit configuration, permissions and other policies on the system."
+	echo "Policies are stored as functions and evaluated against the system."
+	echo "Use this tool to help enforce policies."
+	echo ""
+	echo "audit help                  - Show this help page"
+	echo "audit ssh permissions       - Check .ssh directory permissions"
+	echo ""
+	echo "Note: This tool is under development"
+}
+
+unknown_command () {
+	echo "Unknown command: $1"
+	echo ""
+	audit_help
+}
+
+audit () {
+	local command
+	command="${1:-help}"
+	case "$command" in
+		"help")
+			audit_help "${@:2}"
+			;;
+		*)
+			unknown_command "${@:2}"
+			;;
+	esac
+}
+
+audit "$@"
