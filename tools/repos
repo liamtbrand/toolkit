@@ -9,6 +9,8 @@ set -euo pipefail
 
 #__private_repos_assert_dependencies
 
+# TODO: Make all paths use the full path. Should not be relative paths.
+
 # === CONFIG SETTINGS ===
 
 REPOS_PATHS_FILE=~/.config/repos/paths
@@ -52,6 +54,9 @@ __private_repos_goto () {
 	cd "$selected"
 }
 
+# Adds a repository to the paths file.
+# Takes a relative path?
+# TODO: Make sure this one can handle any kind of path thrown at it...
 __private_repos_add () {
 	rel_path="$(__private_repos_get_rel_path "$1")"
 	abs_path="$(__private_repos_get_abs_path "$1")"
@@ -299,6 +304,9 @@ __private_repos_help () {
 	echo ""
 }
 
+# When there is an unknown command,
+# notify the user that the command is unknown,
+# and display the help page.
 __private_repos_unknown_command () {
 	echo "Unknown command: $1"
 	echo ""
@@ -306,19 +314,38 @@ __private_repos_unknown_command () {
 }
 
 __private_repos_audit_policy_origin_required () {
-	echo "Policy: All repositories have an origin remote set."
-	local repo="$1"
+	repo="$1"
+	local REPO_URL=""
+	REPO_URL="$(git -C "$repo" config --get remote.origin.url)"
+	if [ -z "$REPO_URL" ] ; then
+		echo "Warning: Policy violation. Repo: $repo does not have an origin remote set."
+		echo "Policy: All repositories have an origin remote set."
+	fi
 }
 
-__private_repos_audit_policy_origin_reachable () {
-	echo "Policy: All origin remotes are reachable."
-	local repo="$1"
+ask_yes_no () {
+	while true; do
+		# Note: /dev/tty redirect important:
+		# This could be inside another read while loop...
+		read -r -p "$1 [y/n]: " yn < /dev/tty
+		case $yn in
+			[Yy][Ee][Ss]|[Yy] ) return 0;;
+			[Nn][Oo]|[Nn] ) echo "Aborted."; return 1;;
+			*) echo "Please answer yes or no.";;
+		esac
+	done
 }
 
 __private_repos_audit_policy_all_repos_are_registered_check_repo_is_registered () {
 	repo="$1"
 	if ! __private_repos_repo_is_in_paths_file "$repo" ; then
 		echo "Warning: Policy violation. Repo: $repo is not in paths file."
+		if ask_yes_no "Do you want to add $repo to the paths file?"; then
+			echo "Adding $repo to the paths file..."
+			__private_repos_add "$repo"
+		else
+			echo "Skipping violation... Warning: You should fix this."	
+		fi
 	fi
 }
 
@@ -328,17 +355,30 @@ __private_repos_audit_policy_all_repos_are_registered () {
 	# Find repositories on system...
 	# Check these are all registered with the repos tool...
 	# Report anything that isn't registered.
+	echo "Searching for repositories..."
 
 	while IFS= read -r -d ''; do
 		repo_dir="$(dirname -- "$REPLY")"
 		repo="${repo_dir%/.}"
-		echo "Evaluating repo: $repo"
+		# If file in ignore file, ignore it...
+		if grep -vxf "$REPOS_IGNORE_FILE" <<< "$repo"; then
+			echo "Skipping repo: $repo"
+			continue
+		fi
 		__private_repos_audit_policy_all_repos_are_registered_check_repo_is_registered "$repo"
 	done < <(find . -name .git -print0)
 }
 
+__private_repos_audit_policy_all_paths_in_paths_file_are_absolute () {
+	while IFS= read -r; do
+		local repo="$REPLY"
+	done < "$REPOS_PATHS_FILE"
+}
+
 __private_repos_audit () {
 	echo "Running git repo audit..."
+
+	#__private_repos_audit_policy_all_paths_in_paths_file_are_absolute
 
 	# Audit registration policies
 	__private_repos_audit_policy_all_repos_are_registered
@@ -347,12 +387,13 @@ __private_repos_audit () {
 	while IFS= read -r; do
 		# Read path to repo
 		local repo="$REPLY"
-		local repo="{$repo/#\~/$HOME}"
+		repo="${repo/#\~/$HOME}"  # Replace ~ with $HOME
 		# TODO: Abort if repo path isn't correct?
+		
+		echo "About to evaluate: $repo"
 
 		# Check compliance against policies
 		__private_repos_audit_policy_origin_required "$repo"
-		__private_repos_audit_policy_origin_reachable "$repo"
 	done < "$REPOS_PATHS_FILE"
 }
 
