@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
 # === CONFIG SETTINGS ===
 
@@ -220,7 +221,8 @@ __private_repos_status_of_repo () {
 
 		for remote in "${remotes[@]}"; do
 			
-			local commits="$(git -C "$repo" log --branches --not --remotes --oneline --simplify-by-decoration --decorate --graph)"
+			local commits=""
+			commits="$(git -C "$repo" log --branches --not --remotes --oneline --simplify-by-decoration --decorate --graph)"
 
 			if [ -n "$commits" ]; then
 				echo "- remote: $remote is \033[31mmissing\033[0m:"
@@ -229,7 +231,8 @@ __private_repos_status_of_repo () {
 
 		done
 
-		local status_sb="$(git -C "$repo" status --short --branch)"
+		local status_sb=""
+		status_sb="$(git -C "$repo" status --short --branch)"
 
 		# Only print if branch is behind remote
 		if grep -q "\[behind " <<< "$status_sb"; then
