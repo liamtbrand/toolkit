@@ -41,7 +41,7 @@ __private_repos_get_rel_path () {
 	# Only prefix with ~ if the path is actually inside $HOME
 	if [[ "$abs_path" == "$HOME"* ]]; then
 		# Strip $HOME and prefix with ~
-		rel_path="\~/${abs_path#$HOME/}"
+		rel_path="~/${abs_path#$HOME/}"
 	fi
 	# Clean up trailing slashes
 	rel_path="${rel_path%/}"
@@ -57,6 +57,11 @@ __private_repos_get_abs_path () {
 _repo_is_inaccessible () {
 	repo="$1"
 	return $(directory_is_inaccessible "$repo")
+}
+
+_should_skip_repo () {
+	repo="$1"
+	grep -qf "$REPOS_IGNORE_FILE" <<< "$repo"
 }
 
 CLEAN_TAG="\033[32mCLEAN\033[0m"
@@ -210,9 +215,14 @@ __private_repos_status_of_repo () {
 	#echo "$repo"
 	#echo "args: ${@:1}"
 
+	if _should_skip_repo "$repo" ; then
+		echo "Skipping $repo as per ignore file."
+		return
+	fi
+
 	if _repo_is_inaccessible "$repo" ; then
 		echo "Repo $repo is inaccessible."
-		_offer_drop_to_interactive_subshell "$(_parent_of "$repo")"
+		_offer_drop_to_interactive_subshell "$(parent_of "$repo")"
 		return
 	fi
 	
@@ -264,7 +274,7 @@ __private_repos_status_of_repo () {
 	if [ $dirty_only = false ] || [ $is_clean = false ]; then
 
 		local clean_status=""
-		clean_status=$($is_clean && printf "$CLEAN_TAG" || printf "$DIRTY_TAG")
+		clean_status=$($is_clean && printf '%s' "$CLEAN_TAG" || printf '%s' "$DIRTY_TAG")
 		echo "$clean_status $repo"
 
 		# Begin processing remote changes. Compare branches with what is on the various remotes.
@@ -286,8 +296,10 @@ __private_repos_status_of_repo () {
 			commits="$(git -C "$repo" log --branches --not --remotes --oneline --simplify-by-decoration --decorate --graph)"
 
 			if [ -n "$commits" ]; then
-				printf "\- remote: %s is \033[31mmissing\033[0m:" "$remote"
+				printf "\- remote: %s is \033[31mmissing\033[0m:\n" "$remote"
 				echo "$commits"
+				_offer_drop_to_interactive_subshell "$repo"
+				return # Exit early
 			fi	
 
 		done
@@ -330,7 +342,7 @@ __private_repos_fsck () {
 	done < "$REPOS_PATHS_FILE"
 }
 
-__private_repos_help () {
+repos_help () {
 	echo "Repos tool. Show the status of all the repos on the system."
 	echo "Repositories are stored as a list of paths in: ${REPOS_PATHS_FILE/#$HOME/~}"
 	echo "Use this tool to keep repositories fully in sync with upstream."
@@ -340,6 +352,9 @@ __private_repos_help () {
 	echo "repos list           - List repos in the repository list"
 	echo "repos goto           - Go to one of the repos. Select using fzf."
 	echo "repos status         - Show the status of all the registered repositories"
+	echo "repos audit          - Run an audit of repos on the system"
+	echo "repos ignore         - Edit the repos ignore file"
+	echo "repos paths          - Edit the repos paths file"
 	echo ""
 }
 
@@ -349,7 +364,7 @@ __private_repos_help () {
 __private_repos_unknown_command () {
 	echo "Unknown command: $1"
 	echo ""
-	__private_repos_help
+	repos_help
 }
 
 __private_repos_audit_policy_origin_required () {
@@ -375,11 +390,6 @@ __private_repos_audit_policy_all_repos_are_registered_check_repo_is_registered (
 			echo "Skipping violation... Warning: You should fix this."	
 		fi
 	fi
-}
-
-_should_skip_repo () {
-	repo="$1"
-	grep -qf "$REPOS_IGNORE_FILE" <<< "$repo"
 }
 
 __private_repos_audit_policy_all_repos_are_registered () {
@@ -468,6 +478,14 @@ repos_audit () {
 	done < "$REPOS_PATHS_FILE"
 }
 
+repos_ignore () {
+	"${EDITOR:-vim}" "$REPOS_IGNORE_FILE"
+}
+
+repos_paths () {
+	"${EDITOR:-vim}" "$REPOS_PATHS_FILE"
+}
+
 repos () {
 	local command
 	command="${1:-help}"
@@ -496,8 +514,14 @@ repos () {
 		"audit")
 			repos_audit "${@:2}"
 			;;
+		"ignore")
+			repos_ignore
+			;;
+		"paths")
+			repos_paths
+			;;
 		"help")
-			__private_repos_help "${@:2}"
+			repos_help "${@:2}"
 			;;
 		*)
 			__private_repos_unknown_command "${@:2}"

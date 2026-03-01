@@ -26,3 +26,7 @@ The bootstrap script will add these to the path.
 
 # Configuration
 You can manage configuration using the `config` tool.
+
+
+# Shells
+These scripts are written to be run in either bash shell or zsh shell.

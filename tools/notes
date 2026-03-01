@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+
+# Only set this if we're executing in a subshell...
 set -euo pipefail
 
 # Manage notes
@@ -20,7 +22,8 @@ __private_notes_init () {
 }
 
 notes () {
-	case "$1" in
+	command="${1:-help}"
+	case "$command" in
 		"init")
 			__private_notes_init
 			;;
@@ -35,5 +38,5 @@ notes () {
 	esac
 }
 
-notes init
+notes "$@"
 
