@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Git repository management tool
+# Use this tool to manage git repositories on your machine.
+
 # Preconditions
 #__private_repos_assert_dependencies() {
 #	command -v git >/dev/null 2>&1 || { echo >&2 "Error: Git is not installed."; exit 1 }
@@ -17,7 +20,7 @@ REPOS_PATHS_FILE=~/.config/repos/paths
 
 # The ignore file lists out paths to ignore when processing repos
 # TODO: Enable this
-REPOS_IGNORE_FILE=~/.config/repos/ignore
+REPOS_IGNORE_FILE=$HOME/.config/repos/ignore
 
 # === Helper Functions ===
 
@@ -338,6 +341,7 @@ ask_yes_no () {
 
 __private_repos_audit_policy_all_repos_are_registered_check_repo_is_registered () {
 	repo="$1"
+	echo "Policy check for: $repo"
 	if ! __private_repos_repo_is_in_paths_file "$repo" ; then
 		echo "Warning: Policy violation. Repo: $repo is not in paths file."
 		if ask_yes_no "Do you want to add $repo to the paths file?"; then
@@ -347,6 +351,11 @@ __private_repos_audit_policy_all_repos_are_registered_check_repo_is_registered (
 			echo "Skipping violation... Warning: You should fix this."	
 		fi
 	fi
+}
+
+_should_skip_repo () {
+	repo="$1"
+	grep -qf "$REPOS_IGNORE_FILE" <<< "$repo"
 }
 
 __private_repos_audit_policy_all_repos_are_registered () {
@@ -361,7 +370,7 @@ __private_repos_audit_policy_all_repos_are_registered () {
 		repo_dir="$(dirname -- "$REPLY")"
 		repo="${repo_dir%/.}"
 		# If file in ignore file, ignore it...
-		if grep -vxf "$REPOS_IGNORE_FILE" <<< "$repo"; then
+		if _should_skip_repo "$repo"; then
 			echo "Skipping repo: $repo"
 			continue
 		fi
@@ -375,7 +384,7 @@ __private_repos_audit_policy_all_paths_in_paths_file_are_absolute () {
 	done < "$REPOS_PATHS_FILE"
 }
 
-__private_repos_audit () {
+repos_audit () {
 	echo "Running git repo audit..."
 
 	#__private_repos_audit_policy_all_paths_in_paths_file_are_absolute
@@ -386,11 +395,17 @@ __private_repos_audit () {
 	# Audit registered repositories
 	while IFS= read -r; do
 		# Read path to repo
+		# TODO: Use yield approach to format the read nicely
 		local repo="$REPLY"
 		repo="${repo/#\~/$HOME}"  # Replace ~ with $HOME
 		# TODO: Abort if repo path isn't correct?
-		
-		echo "About to evaluate: $repo"
+
+		if _should_skip_repo "$repo"; then
+			echo "Skipping repo: $repo"
+			continue
+		fi
+
+		echo "Evaluating: $repo"
 
 		# Check compliance against policies
 		__private_repos_audit_policy_origin_required "$repo"
@@ -423,7 +438,7 @@ repos () {
 			__private_repos_status "${@:2}"
 			;;
 		"audit")
-			__private_repos_audit
+			repos_audit
 			;;
 		"help")
 			__private_repos_help "${@:2}"
