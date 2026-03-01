@@ -212,7 +212,7 @@ __private_repos_status_of_repo () {
 	# You can think of this as outgoing and incoming for each remote.
 
 	local repo="$1"
-	#echo "$repo"
+	#
 	#echo "args: ${@:1}"
 
 	if _should_skip_repo "$repo" ; then
@@ -274,7 +274,7 @@ __private_repos_status_of_repo () {
 	if [ $dirty_only = false ] || [ $is_clean = false ]; then
 
 		local clean_status=""
-		clean_status=$($is_clean && printf '%s' "$CLEAN_TAG" || printf '%s' "$DIRTY_TAG")
+		clean_status=$($is_clean && printf "$CLEAN_TAG" || printf "$DIRTY_TAG")
 		echo "$clean_status $repo"
 
 		# Begin processing remote changes. Compare branches with what is on the various remotes.
