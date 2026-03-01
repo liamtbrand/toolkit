@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Toolkit for doing work in the terminal.
+
+# I want to use zsh where possible.
+# I want to use tmux where possible.
+# I also want to use vim or neovim when possible.
+# Likewise, tools like fzf are nice to have.
+# I want to be able to bootstrap installing these.
+
+TOOLKIT_UPSTREAM_URL="git@github.com:liamtbrand/toolkit.git"
+
+TOOLKIT_REPO_PATH="$HOME/toolkit"
+TOOLKIT_GIT_PATH="/usr/bin/git"
+
+__private_toolkit_git() {
+	$TOOLKIT_GIT_PATH --git-dir="$TOOLKIT_REPO_PATH/.git" --work-tree="$TOOLKIT_REPO_PATH" "${@:1}"
+}
+
+__private_toolkit_description() {
+	echo "Liam's Toolkit."
+	echo "Manage configuration using: config"
+	echo "Available tools:"
+	config modules
+	echo "  config"
+	echo "  repos"
+	echo "  notes"
+	echo "  homelab"
+	echo "  pass"
+	echo "Dependencies:"
+	echo "  fzf"
+	echo "  zsh"
+	echo "  tmux"
+	echo "  vim"
+	echo "  neovim"
+	echo "  bat"
+	echo "  delta"
+}
+
+toolkit () {
+	case "$1" in
+		"git")
+			__private_toolkit_git "${@:2}"
+			;;
+		*)
+			__private_toolkit_description
+			;;
+	esac
+}
+

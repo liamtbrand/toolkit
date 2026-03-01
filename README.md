@@ -15,6 +15,7 @@ depending on the machine you're on. This allows for differing profiles.
 cd ~
 git clone git@github.com:liamtbrand/toolkit.git
 cd toolkit
-./toolkit.sh
+./bootstrap.sh
 ```
+
 

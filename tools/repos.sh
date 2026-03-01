@@ -1,6 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Preconditions
+__private_repos_assert_dependencies() {
+	command -v git >/dev/null 2>&1 || { echo >&2 "Error: Git is not installed."; exit 1 }
+	command -v find >/dev/null 2>&1 || { echo >&2 "Error: find is not installed."; exit 1 }
+}
+
+__private_repos_assert_dependencies
+
 # === CONFIG SETTINGS ===
 
 REPOS_PATHS_FILE=~/.config/repos/paths
@@ -285,6 +293,12 @@ __private_repos_help () {
 	echo ""
 }
 
+__private_repos_unknown_command () {
+	echo "Unknown command: $1"
+	echo ""
+	__private_repos_help
+}
+
 __private_repos_audit_policy_origin_required () {
 	echo "Policy: All repositories have an origin remote set."
 	local repo="$1"
@@ -325,7 +339,9 @@ __private_repos_audit() {
 }
 
 repos () {
-	case "$1" in
+	local command
+	command="${1:-help}"
+	case "$command" in
 		"find")
 			__private_repos_find "${@:1}"
 			;;
@@ -354,7 +370,7 @@ repos () {
 			__private_repos_help "${@:2}"
 			;;
 		*)
-			__private_repos_help "${@:2}"
+			__private_repos_unknown_command "${@:2}"
 			;;
 	esac
 }
