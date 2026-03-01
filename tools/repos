@@ -24,11 +24,21 @@ source "$LIB_PATH"
 
 # === CONFIG SETTINGS ===
 
-REPOS_PATHS_FILE=~/.config/repos/paths
+REPOS_DIR="$HOME/.config/repos"
+
+mkdir -p "$REPOS_DIR"
+
+REPOS_PATHS_FILE="$REPOS_DIR/paths"
+if ! [ -e "$REPOS_PATHS_FILE" ] ; then
+	touch "$REPOS_PATHS_FILE"
+fi
 
 # The ignore file lists out paths to ignore when processing repos
 # TODO: Enable this
-REPOS_IGNORE_FILE=$HOME/.config/repos/ignore
+REPOS_IGNORE_FILE=$REPOS_DIR/ignore
+if ! [ -e "$REPOS_IGNORE_FILE" ] ; then
+	touch "$REPOS_IGNORE_FILE"
+fi
 
 # === Helper Functions ===
 
