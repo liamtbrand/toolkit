@@ -1,0 +1,9 @@
+ripgrep
+neovim
+tmux
+fzf
+zsh
+zsh-autosuggestions
+zsh-syntax-highlighting
+git-delta
+trash
