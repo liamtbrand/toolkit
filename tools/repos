@@ -374,3 +374,5 @@ repos () {
 			;;
 	esac
 }
+
+repos "$@"

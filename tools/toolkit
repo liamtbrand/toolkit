@@ -49,3 +49,4 @@ toolkit () {
 	esac
 }
 
+toolkit "$@"

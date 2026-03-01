@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
 # Manage notes
 # Notes are by default at ~/notes.
@@ -11,8 +12,18 @@ __private_notes_git () {
 	/usr/bin/git --git-dir="$NOTES_REPOSITORY_PATH/.git" --work-tree="$NOTES_REPOSITORY_PATH" "${@:1}"
 }
 
+__private_notes_init () {
+	# This binds the help page to open in neovim by pressing o.
+	alias o="cd '${NOTES_REPOSITORY_PATH}'; $EDITOR notes.md; cd - >/dev/null"
+	# Obsidian
+	alias help="cd '${NOTES_REPOSITORY_PATH}'; $EDITOR Help.md; cd - >/dev/null"
+}
+
 notes () {
 	case "$1" in
+		"init")
+			__private_notes_init
+			;;
 		"git")
 			__private_notes_git "${@:2}"
 			;;
@@ -24,9 +35,5 @@ notes () {
 	esac
 }
 
-# This binds the help page to open in neovim by pressing o.
-alias o="cd '${NOTES_REPOSITORY_PATH}'; $EDITOR notes.md; cd - >/dev/null"
-
-# Obsidian
-alias help="cd '${NOTES_REPOSITORY_PATH}'; $EDITOR Help.md; cd - >/dev/null"
+notes init
 

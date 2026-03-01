@@ -18,4 +18,11 @@ cd toolkit
 ./bootstrap.sh
 ```
 
+# Tools
+Tools should be placed into the `tools/` directory.
+The bootstrap script will add these to the path.
 
+# Mods
+
+# Configuration
+You can manage configuration using the `config` tool.
