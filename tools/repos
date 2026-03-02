@@ -88,7 +88,7 @@ __private_repos_fetch () {
 
 		printf "\\033[36m=== %s ===\\033[0m" "$repo"
 
-		git -C "$repo" fetch --dry-run --verbose
+		git -C "$repo" fetch --all --dry-run --verbose
 	done < "$REPOS_PATHS_FILE"
 }
 
@@ -281,22 +281,24 @@ __private_repos_status_of_repo () {
 		is_clean=false # no remotes. mark dirty ? need to show this isn't in a good state.
 	fi
 
-	if [ $dirty_only = false ] || [ $is_clean = false ]; then
+	if [ ${dirty_only} = false ] || [ ${is_clean} = false ]; then
 
 		local clean_status=""
-		clean_status=$($is_clean && printf "$CLEAN_TAG" || printf "$DIRTY_TAG")
-		echo "$clean_status $repo"
+		clean_status=$(${is_clean} && printf "${CLEAN_TAG}" || printf "${DIRTY_TAG}")
+		echo "$clean_status ${repo}"
 
 		# Begin processing remote changes. Compare branches with what is on the various remotes.
 		
 		# NOTE: We'll fetch all changes we can first...
 		if [ $fetch = true ]; then
-			git -C "$repo" fetch --all
+			if ask_yes_no "Do you want to fetch ${repo} for the following remotes: ${remotes[@]} ?" ; then
+				git -C "$repo" fetch --all
+			fi
 		fi
 
 		if [ ${#remotes[@]} -eq 0 ]; then
 			printf "\033[31mwarn\033[0m No remotes. You should configure an upstream remote.\n"
-			_offer_drop_to_interactive_subshell "$repo"
+			_offer_drop_to_interactive_subshell "${repo}"
 			return # Exit early and start processing next item
 		fi
 
@@ -388,6 +390,14 @@ __private_repos_audit_policy_origin_required () {
 	fi
 }
 
+add_repo_to_ignore_file () {
+	repo="$1"
+	local STRING_TO_MATCH="$repo"
+	ESCAPED_STRING=$(printf '%s' "$STRING_TO_MATCH" | sed 's/[.[\*^$]/\\&/g')
+	REGEX_PATTERN="^$ESCAPED_STRING$"
+	echo "$REGEX_PATTERN" >> "$REPOS_IGNORE_FILE"
+}
+
 __private_repos_audit_policy_all_repos_are_registered_check_repo_is_registered () {
 	repo="$1"
 	echo "Policy check for: $repo"
@@ -396,9 +406,14 @@ __private_repos_audit_policy_all_repos_are_registered_check_repo_is_registered (
 		if ask_yes_no "Do you want to add $repo to the paths file?"; then
 			echo "Adding $repo to the paths file..."
 			__private_repos_add "$repo"
-		else
-			echo "Skipping violation... Warning: You should fix this."	
+			return
 		fi
+		if ask_yes_no "Do you want to add $repo to the ignore file?"; then
+			echo "Adding $repo to the ignore file..."
+			add_repo_to_ignore_file "$repo"
+			return
+		fi
+		echo "Skipping violation... Warning: You should fix this."
 	fi
 }
 
@@ -415,7 +430,7 @@ __private_repos_audit_policy_all_repos_are_registered () {
 		repo="${repo_dir%/.}"
 		# If file in ignore file, ignore it...
 		if _should_skip_repo "$repo"; then
-			echo "Skipping repo: $repo"
+			echo "Skipping repo: $repo as per ignore file..."
 			continue
 		fi
 		__private_repos_audit_policy_all_repos_are_registered_check_repo_is_registered "$repo"
@@ -469,7 +484,7 @@ repos_audit () {
 		# TODO: Abort if repo path isn't correct?
 
 		if _should_skip_repo "$repo"; then
-			echo "Skipping repo: $repo"
+			echo "Skipping repo: $repo as per ignore file..."
 			continue
 		fi
 
