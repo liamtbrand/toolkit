@@ -281,17 +281,17 @@ __private_repos_status_of_repo () {
 		is_clean=false # no remotes. mark dirty ? need to show this isn't in a good state.
 	fi
 
-	if [ ${dirty_only} = false ] || [ ${is_clean} = false ]; then
+	if [ $dirty_only = false ] || [ $is_clean = false ]; then
 
 		local clean_status=""
-		clean_status=$(${is_clean} && printf "${CLEAN_TAG}" || printf "${DIRTY_TAG}")
-		echo "$clean_status ${repo}"
+		clean_status=$($is_clean && printf "$CLEAN_TAG" || printf "$DIRTY_TAG")
+		echo "$clean_status $repo"
 
 		# Begin processing remote changes. Compare branches with what is on the various remotes.
 		
 		# NOTE: We'll fetch all changes we can first...
 		if [ $fetch = true ]; then
-			if ask_yes_no "Do you want to fetch ${repo} for the following remotes: ${remotes[@]} ?" ; then
+			if ask_yes_no "Do you want to fetch $repo for the following remotes: ${remotes[@]} ?" ; then
 				git -C "$repo" fetch --all
 			fi
 		fi
