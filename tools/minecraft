@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Tool to find minecraft servers and check policy adherence.
+
+is_git_dir () {
+	path="$1"
+	git -C "$path" rev-parse --git-dir > /dev/null 2>&1
+}
+
+minecraft_find () {
+	echo "Searching for minecraft servers in: $(pwd)"
+	
+	local directories=()
+	while IFS= read -r line ; do
+		directories+=("$line")
+	done < <( \
+		find . -type f \( \
+			   -regex '.*/minecraft[^/]*\.jar' \
+			-o -regex '.*/bukkit[^/]*\.jar' \
+			-o -regex '.*/server\.properties' \
+			-o -regex '.*/eula\.txt' \
+		\) -print0 \
+		| xargs -0 -n1 dirname \
+		| sort -u \
+	)
+	
+	#echo -e "${directories[@]}"
+	
+	# Check for git repositories
+	for path in "${directories[@]}" ; do
+		if is_git_dir "$path"; then
+			repos status "$path"
+		else
+			echo "FOUND $path"
+		fi
+	done
+}
+
+minecraft () {
+	case "$1" in
+		"find")
+			minecraft_find
+			;;
+		*)
+			echo "Unknown option."
+			;;
+	esac
+}
+
+minecraft "$@"

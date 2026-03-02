@@ -324,11 +324,24 @@ __private_repos_status_of_repo () {
 			echo "$status_sb"
 		fi
 
+		# When the repo is dirty, offer dropping to subshell
+		if [ $is_clean = false ] ; then
+			_offer_drop_to_interactive_subshell "$repo"
+		fi
+
 	fi
 
 }
 
 __private_repos_status () {
+
+	# If next argument is a path
+	if [[ $# -gt 0 && -d "$1" ]] ; then
+		# short circuit and just show the status for this one...
+		__private_repos_status_of_repo "$1" "${@:2}"
+		return
+	fi
+
 	local counter=0
 	while IFS= read -r repo <&3; do
 		local repo="${repo/#\~/$HOME}"
