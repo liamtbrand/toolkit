@@ -9,6 +9,11 @@ You can manage dotfiles using that tool and you'll be able to select a repositor
 where you want to sync the configuration from. This could be a branch or a repo
 depending on the machine you're on. This allows for differing profiles.
 
+# Important
+
+> [!WARNING] Not all scripts are functional.
+> This repo is a work in progress.
+
 # Installation
 
 ```shell
