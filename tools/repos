@@ -236,11 +236,6 @@ __private_repos_status_of_repo () {
 		return
 	fi
 	
-	#skip_ok=false
-	#if [ "$2" = "--skip-ok" ]; then
-	#	skip_ok=true # Should we skip ok repos
-	#fi
-
 	local fetch=false
 	local dirty_only=false
 	
