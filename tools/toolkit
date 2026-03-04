@@ -19,7 +19,13 @@ __private_toolkit_git() {
 }
 
 __private_toolkit_description() {
-	echo "Liam's Toolkit."
+	local GIT_SHA=""
+	GIT_SHA=$(git -C "$TOOLKIT_REPO_PATH" rev-parse HEAD)	
+	local MODIFIED=""
+	if [ -n "$(git -C "$TOOLKIT_REPO_PATH" status --porcelain)" ] ; then
+		MODIFIED="(Modified)"
+	fi
+	echo "Liam's Toolkit. Version: $GIT_SHA $MODIFIED"
 	echo "Manage configuration using: config"
 	echo "Available tools:"
 	config modules
@@ -39,7 +45,9 @@ __private_toolkit_description() {
 }
 
 toolkit () {
-	case "$1" in
+	local cmd=""
+	cmd="${1:-help}"
+	case "$cmd" in
 		"git")
 			__private_toolkit_git "${@:2}"
 			;;
