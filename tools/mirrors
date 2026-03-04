@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Tool to mirror repositories
+
+URL_FILE="$HOME/mirrors/urls"
+
+mirrors_refresh () {
+	if [ ! -f "$URL_FILE" ] ; then
+		echo "No url file found"
+		exit 1
+	fi
+
+	while IFS= read -r url; do
+		echo "Refreshing mirror for: $url"
+	done < "$URL_FILE"
+}
+
+mirrors () {
+	local command
+	command="${1:-help}"
+	case "$command" in
+		"refresh")
+			echo "Refreshing..."
+			;;
+		"edit")
+			"$EDITOR" "$URL_FILE"
+			;;
+		"help")
+			echo "Git mirrors tool. Use this to keep an organised mirror of many git repositories."
+			echo ""
+			echo "mirrors edit       - Open urls file for editing"
+			echo "mirrors refresh    - Refresh the mirrors"
+			echo "mirrors help       - Show this help"
+			;;
+		*)
+			echo "Unknown command"
+			;;
+	esac
+}
+
+mirrors "$@"
