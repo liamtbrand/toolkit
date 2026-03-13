@@ -3,34 +3,105 @@ set -euo pipefail
 
 # Tool to mirror repositories
 
-URL_FILE="$HOME/mirrors/urls"
+# Requirements:
+# - yq - Used for parsing yaml files
 
-mirrors_refresh () {
-	if [ ! -f "$URL_FILE" ] ; then
-		echo "No url file found"
+MIRRORS_DIR="$HOME/mirrors"
+# The mirrors file contains a list of mirror name + url
+MIRRORS_FILE="$HOME/mirrors/mirrors.yaml"
+
+assert_mirrors_file_exists () {
+	if [ ! -f "$MIRRORS_FILE" ] ; then
+		echo "No mirrors file found"
 		exit 1
 	fi
+}
 
-	while IFS= read -r url; do
-		echo "Refreshing mirror for: $url"
-	done < "$URL_FILE"
+mirrors_refresh_mirror () {
+	local repo="$1"
+	git -C "$repo" remote update
+}
+
+mirrors_update_mirror () {
+	local item_yaml=""
+	item_yaml="$1"
+	echo ""
+	echo "Processing yaml entry:"
+	echo "$item_yaml"
+	echo "---"
+
+	local name=""
+	name=$(yq '.name' <<< "$item_yaml")
+	if [[ -z "$name" ]]; then
+		echo "WARNING: No name found for mirror. Skipping entry."
+		return
+	fi
+
+	# Read path from yaml
+	local path=""
+	path=$(yq '.path // ""' <<< "$item_yaml")
+	# Default to name.git if path is not explicitly set
+	path=${path:-"${MIRRORS_DIR}/${name}.git"}
+
+	if [[ ! -d "$path" ]]; then
+		echo "Mirror repo doesn't exist yet at: $path"
+		echo "Attempting to create it..."
+		local url=""
+		url=$(yq '.url' <<< "$item_yaml")
+		if [[ -z "$url" ]]; then
+			echo "WARNING: No url found for mirror. Skipping entry."
+			return
+		fi
+		echo "DRY: git clone --mirror $url $path"
+		#git clone --mirror "$url" "$path"
+		return
+	fi
+	
+	echo "Updating mirror at: $path"
+	echo "DRY: git -C $path remote update"
+}
+
+mirrors_update () {
+	assert_mirrors_file_exists
+	while IFS= read -r -d '' item_yaml; do
+		mirrors_update_mirror "$item_yaml"
+	done < <(yq -o=y -0 '.mirrors.[]' "$MIRRORS_FILE")
+}
+
+mirrors_list () {
+	assert_mirrors_file_exists
+
+	while IFS= read -r -d '' item_yaml; do
+		echo "$item_yaml"
+		name=$(yq '.name' <<< "$item_yaml")
+		echo ""
+	done < <(yq -o=y -0 '.mirrors.[]' "$MIRRORS_FILE")
+}
+
+mirrors_edit () {
+	"$EDITOR" "$MIRRORS_FILE"
 }
 
 mirrors () {
 	local command
 	command="${1:-help}"
 	case "$command" in
-		"refresh")
-			echo "Refreshing..."
+		"list")
+			mirrors_list
 			;;
 		"edit")
-			"$EDITOR" "$URL_FILE"
+			mirrors_edit
+			;;
+		"update")
+			mirrors_update
 			;;
 		"help")
 			echo "Git mirrors tool. Use this to keep an organised mirror of many git repositories."
 			echo ""
-			echo "mirrors edit       - Open urls file for editing"
+			echo "mirrors edit       - Open mirrors file for editing"
 			echo "mirrors refresh    - Refresh the mirrors"
+			echo "mirrors update     - Update the mirrors by fetching changes over network"
+			echo "mirrors list       - List mirrors"
 			echo "mirrors help       - Show this help"
 			;;
 		*)
