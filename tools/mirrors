@@ -17,11 +17,6 @@ assert_mirrors_file_exists () {
 	fi
 }
 
-mirrors_refresh_mirror () {
-	local repo="$1"
-	git -C "$repo" remote update
-}
-
 mirrors_update_mirror () {
 	local item_yaml=""
 	item_yaml="$1"
@@ -58,7 +53,7 @@ mirrors_update_mirror () {
 	fi
 	
 	echo "Updating mirror at: $path"
-	echo "DRY: git -C $path remote update"
+	git -C "$path" remote update
 }
 
 mirrors_update () {
@@ -96,10 +91,9 @@ mirrors () {
 			mirrors_update
 			;;
 		"help")
-			echo "Git mirrors tool. Use this to keep an organised mirror of many git repositories."
+			echo "Git mirrors tool. Use this to keep organised mirrors of many git repositories."
 			echo ""
 			echo "mirrors edit       - Open mirrors file for editing"
-			echo "mirrors refresh    - Refresh the mirrors"
 			echo "mirrors update     - Update the mirrors by fetching changes over network"
 			echo "mirrors list       - List mirrors"
 			echo "mirrors help       - Show this help"
