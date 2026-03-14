@@ -56,7 +56,28 @@ mirrors_update_mirror () {
 	git -C "$path" remote update
 }
 
+set_mirrors_paths () {
+	MIRRORS_FILE="${1:-"${MIRRORS_FILE}"}"
+	assert_mirrors_file_exists
+	local path=""
+	# Extract optional mirrors path
+	path="$(yq '.path // ""' "$MIRRORS_FILE")"
+	if [[ -z "$path" ]]; then
+		# Default to parent directory if empty...
+		path="$(dirname "$MIRRORS_FILE")"
+	fi
+	if [[ ! -d "$path" ]]; then
+		echo "Can't locate specified path: $path"
+		echo "Note: You must manually create the target directory."
+		echo "Check the mirrors file at: $MIRRORS_FILE"
+		echo "Aborting."
+		exit 1
+	fi
+
+}
+
 mirrors_update () {
+	set_mirrors_paths "$1"
 	assert_mirrors_file_exists
 	while IFS= read -r -d '' item_yaml; do
 		mirrors_update_mirror "$item_yaml"
@@ -64,8 +85,10 @@ mirrors_update () {
 }
 
 mirrors_list () {
+	set_mirrors_paths "${@:1}"
+	echo "MIRRORS_FILE=$MIRRORS_FILE"
+	echo "MIRRORS_DIR=$MIRRORS_DIR"
 	assert_mirrors_file_exists
-
 	while IFS= read -r -d '' item_yaml; do
 		echo "$item_yaml"
 		name=$(yq '.name' <<< "$item_yaml")
@@ -88,7 +111,7 @@ mirrors () {
 			mirrors_edit
 			;;
 		"update")
-			mirrors_update
+			mirrors_update "${@:2}"
 			;;
 		"help")
 			echo "Git mirrors tool. Use this to keep organised mirrors of many git repositories."
