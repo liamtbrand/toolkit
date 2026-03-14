@@ -82,7 +82,7 @@ set_mirrors_paths () {
 }
 
 mirrors_update () {
-	set_mirrors_paths "${@:2}"
+	set_mirrors_paths "${@:1}"
 	assert_mirrors_file_exists
 	while IFS= read -r -d '' item_yaml; do
 		mirrors_update_mirror "$item_yaml"
@@ -110,7 +110,7 @@ mirrors () {
 	command="${1:-help}"
 	case "$command" in
 		"list")
-			mirrors_list
+			mirrors_list "${@:2}"
 			;;
 		"edit")
 			mirrors_edit
