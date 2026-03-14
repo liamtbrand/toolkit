@@ -61,8 +61,12 @@ set_mirrors_paths () {
 	MIRRORS_FILE="${1:-"${MIRRORS_FILE}"}"
 	assert_mirrors_file_exists
 	local path=""
-	# Extract optional mirrors path
-	path="$(yq '.path // ""' "$MIRRORS_FILE")"
+	# Extract optional mirrors path in args
+	path="${2:-}"
+	if [[ -z "$path" ]]; then
+		# Try using the path in the file is it exists...
+		path="$(yq '.path // ""' "$MIRRORS_FILE")"
+	fi
 	if [[ -z "$path" ]]; then
 		# Default to parent directory if empty...
 		path="$(dirname "$MIRRORS_FILE")"
@@ -78,7 +82,7 @@ set_mirrors_paths () {
 }
 
 mirrors_update () {
-	set_mirrors_paths "$1"
+	set_mirrors_paths "${@:2}"
 	assert_mirrors_file_exists
 	while IFS= read -r -d '' item_yaml; do
 		mirrors_update_mirror "$item_yaml"
