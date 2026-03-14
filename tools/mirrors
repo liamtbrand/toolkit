@@ -2,6 +2,7 @@
 set -euo pipefail
 
 # Tool to mirror repositories
+# Tag: 1CE519C7-E318-4F01-B4FB-75219D34861D
 
 # Requirements:
 # - yq - Used for parsing yaml files
