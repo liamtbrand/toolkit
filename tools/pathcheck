@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Check paths below a directory conform to naming requirements for target file systems
+
+# Define illegal characters for NTFS: < > : " \ | ? *
+# Note: / is already a separator in Linux paths
+NTFS_ILLEGAL_CHARS='[<>:"\\|?*]'
+NTFS_RESERVED_NAMES='^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(\..*)?$'
+
+ERROR_COUNT=0
+
+pathcheck_ntfs () {
+	local searchdir="${1:-.}"
+	echo "Scanning $searchdir for NTFS naming compliance..."
+	while IFS= read -r -d '' item; do
+		filename=$(basename "$item")
+		
+		# 1. Check for illegal characters
+		if [[ "$filename" =~ $NTFS_ILLEGAL_CHARS ]]; then
+			echo "FAIL (Illegal Char): $item"
+			((ERROR_COUNT++))
+		fi
+
+		# 2. Check for reserved names
+		fn_upper=$(echo "$filename" | tr '[:lower:]' '[:upper:]')
+		if [[ "$fn_upper" =~ $NTFS_RESERVED_NAMES ]]; then
+			echo "FAIL (Reserved Name): $item"
+			((ERROR_COUNT++))
+		fi
+
+		# 3. Check for trailing dots or spaces (Windows API issues)
+		if [[ "$filename" =~ [.\ ]$ ]]; then
+			echo "FAIL (Trailing Dot/Space): $item"
+			((ERROR_COUNT++))
+		fi
+
+		# 4. Check path length (MAX_PATH is 260)
+		if [ ${#item} -ge 260 ]; then
+			echo "FAIL (Path too long - ${#item} chars): $item"
+			((ERROR_COUNT++))
+		fi
+
+	done < <(find "$searchdir" -mindepth 1 -print0)
+
+	echo "--------------------------------------------"
+
+	if [ "$ERROR_COUNT" -gt 0 ]; then
+		echo "ERROR: One or more paths are incompatible with NTFS."
+		exit 1
+	else
+		echo "All paths are NTFS compliant."
+	fi
+}
+
+pathcheck_all () {
+	pathcheck_ntfs "${@:1}"
+}
+
+pathcheck_help () {
+	echo "Pathcheck tool. Check paths conform to naming requirements for file systems."
+	echo "Known file systems: NTFS, FAT32, ext4, apfs"
+	echo ""
+	echo "Usage:"
+	echo "  pathcheck [filesystem] <path>"
+	echo "  pathcheck all <path>"
+	echo ""
+}
+
+pathcheck () {
+	cmd="${1:-}"
+	case "$cmd" in
+		"all")
+			pathcheck_all "${@:2}"
+			;;
+		*)
+			pathcheck_help
+			;;
+	esac
+}
+
+pathcheck "$@"
