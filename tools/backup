@@ -40,14 +40,14 @@ if [[ -z "$RSYNC_PATH" ]]; then
     exit 1
 fi
 RSYNC_HASH=$(sha256sum "$RSYNC_PATH" | awk '{print $1}')
-MATCH=false
-for hash in "${RSYNC_HASHES}"; do
+MATCH="false"
+for hash in "${RSYNC_HASHES[@]}"; do
     if [[ "$RSYNC_HASH" == "$hash" ]]; then
-	MATCH=true
+	MATCH="true"
 	break
     fi
 done
-if [ "$MATCH" = false ]; then
+if [[ "$MATCH" == "false" ]]; then
     echo "Warning: rsync binary hash ($RSYNC_HASH) is unknown. Aborting."
     exit 1
 fi
