@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
 # This tool is useful for making backups using rsync.
 # It's a bit annoying to have to read the manual each time.
@@ -15,17 +16,39 @@
 if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
     echo "ERROR: This script must be run, not sourced!" >&2
     # Use 'return' to stop execution within the sourced context
-    return 1
+    exit 1
 fi
 
 if ! command -v date &> /dev/null; then
     echo "Error: 'date' is not installed. Aborting script." >&2
-    return 1
+    exit 1
 fi
 
 if ! command -v rsync &> /dev/null; then
     echo "Error: 'rsync' is not installed. Aborting script." >&2
-    return 1
+    exit 1
+fi
+
+# Assert rsync is a known version
+RSYNC_HASHES=(
+    "7a94e8a7473ba5f1e910a4b252719c6dea65603a364b34a73d815d493812d1b3"
+)
+RSYNC_PATH=$(type -p rsync)
+if [[ -z "$RSYNC_PATH" ]]; then
+    echo "Error: rsync not found in PATH."
+    exit 1
+fi
+RSYNC_HASH=$(sha256sum "$RSYNC_PATH" | awk '{print $1}')
+MATCH=false
+for hash in "${RSYNC_HASHES}"; do
+    if [[ "$RSYNC_HASH" == "$hash" ]]; then
+	MATCH=true
+	break
+    fi
+done
+if [ "$MATCH" = false ]; then
+    echo "Warning: rsync binary hash ($RSYNC_HASH) is unknown. Aborting."
+    exit 1
 fi
 
 # Global Options
@@ -103,9 +126,9 @@ help () {
 	echo ""
 	echo "Usage examples:"
 	echo ""
-	echo "  backup --incremental user@machine:'/path/to/source/data' /path/to/destination"
+	echo "  backup --incremental --from user@machine:'/path/to/source/data' --to /path/to/destination"
 	echo ""
-	echo "  backup --mirror user@machine:'/path/to/source/data' /path/to/destination"
+	echo "  backup --mirror --from user@machine:'/path/to/source/data' --to /path/to/destination"
 	echo ""
 	echo "Note:"
 	echo "  You must configure ssh keys for authenticating with remote machines."
@@ -119,6 +142,9 @@ help () {
 
 backup () {
 
+    local SOURCE=""
+    local DEST=""
+
     while [[ $# -gt 0 && "$1" == -* ]]; do
 	case "$1" in
 	    --incremental)
@@ -128,6 +154,14 @@ backup () {
 	    --mirror)
 		MODE="mirror"
 		shift
+		;;
+	    --from)
+		SOURCE="$2"
+		shift 2
+		;;
+	    --to)
+		DEST="$2"
+		shift 2
 		;;
 	    -v|--verbose)
 		VERBOSE="true"
@@ -144,23 +178,8 @@ backup () {
 	esac
     done
 
-    local SOURCE="$1"
-    if [[ -z "$SOURCE" ]]; then
-	echo "Error: You must specify a source."
-	echo "Showing help:"
-	echo ""
-	help
-	exit 1
-    fi
-
-    local DEST="$2"
-    if [[ -z "$DEST" ]]; then
-	echo "Error: You must specify a destination."
-	echo "Showing help:"
-	echo ""
-	help
-	exit 1
-    fi
+    [[ -z "$SOURCE" ]] && { echo "Error: --from path is required."; exit 1; }
+    [[ -z "$DEST" ]] && { echo "Error: --to path is required."; exit 1; }
 
     case "$MODE" in
 	incremental)
