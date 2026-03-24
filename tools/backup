@@ -31,7 +31,8 @@ fi
 
 # Assert rsync is a known version
 RSYNC_HASHES=(
-    "7a94e8a7473ba5f1e910a4b252719c6dea65603a364b34a73d815d493812d1b3"
+    "7a94e8a7473ba5f1e910a4b252719c6dea65603a364b34a73d815d493812d1b3" # rsync on macos
+    "ea0f3606657eed1e998441ced3d545f5eec8082cdfb2ac04c985083c53aa3724" # rsync on synology NAS
 )
 RSYNC_PATH=$(type -p rsync)
 if [[ -z "$RSYNC_PATH" ]]; then
