@@ -135,6 +135,7 @@ do_mirror_backup () {
 	--partial \
 	--progress \
 	--delete \
+	--dry-run \
 	--filter="P BACKUP_TARGET_OK" \
 	"$SOURCE" \
 	"$DEST"
