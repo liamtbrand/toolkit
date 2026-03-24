@@ -37,26 +37,26 @@ do_incremental_backup() {
     local DATE_TAG=""
     DATE_TAG=$(date "+%Y-%m-%dT%H-%M-%S")
 
-    local SOURCE_PATH="$1"
-    local DESTINATION_PATH="$2"
+    local SOURCE="$1"
+    local DEST="$2"
 
     # NOTE: This has to be run on the target machine?
     # Can I make it so it works across the network?
     # Target should be able to be a remote machine.
     # Pull backups vs push backups.
-    if [ ! -d "$DESTINATION_PATH" ]; then
+    if [ ! -d "$DEST" ]; then
 	# Currently this just works for pull backups.
 	# Would be nice if it worked for push backups.
 	# NOTE: Pull backups seem safer from an access point of view.
 	# Maybe its fine to leave this as it is?
 	[[ "$VERBOSE" == "true" ]] && echo "Debug: Creating destination directory..."
-	mkdir -p "$DESTINATION_PATH" && echo "Directory created." || echo "Error: Can't create directory." && return 1
+	mkdir -p "$DEST" && echo "Directory created." || echo "Error: Can't create directory." && return 1
     fi
 
-    [ ! -e "$DESTINATION_PATH/README.md" ] && echo "Generated backups using backup script. See Liam's Toolkit. https://github.com/liamtbrand/toolkit" > "$DESTINATION_PATH/README.md"
+    [ ! -e "$DEST/README.md" ] && echo "Generated backups using backup script. See Liam's Toolkit. https://github.com/liamtbrand/toolkit" > "$DEST/README.md"
 
     [[ "$VERBOSE" == "true" ]] && echo "Debug: Writing rsync_ignore file..."
-    cat > "$DESTINATION_PATH/rsync_ignore" << EOF
+    cat > "$DEST/rsync_ignore" << EOF
 .DS_Store
 .Spotlight-V100
 .DocumentRevisions-V100
@@ -72,34 +72,61 @@ EOF
 	--archive \
 	--compress \
 	--partial --progress \
-	--link-dest="$DESTINATION_PATH/latest" \
-	--log-file="$DESTINATION_PATH/backup-$DATE_TAG.log" \
-	--exclude-from="$DESTINATION_PATH/rsync_ignore" \
+	--link-dest="$DEST/latest" \
+	--log-file="$DEST/backup-$DATE_TAG.log" \
+	--exclude-from="$DEST/rsync_ignore" \
 	--rsync-path="sudo rsync" \
-	"$SOURCE_PATH" "$DESTINATION_PATH/backup-$DATE_TAG"
+	"$SOURCE" "$DEST/backup-$DATE_TAG"
 
-    rm -f "$DESTINATION_PATH/latest"
-    ln -s "$DESTINATION_PATH/backup-$DATE_TAG" "$DESTINATION_PATH/latest"
+    rm -f "$DEST/latest"
+    ln -s "$DEST/backup-$DATE_TAG" "$DEST/latest"
+}
+
+do_mirror_backup () {
+    local SOURCE="$1"
+    local DEST="$2"
+    rsync \
+	--verbose \
+	--archive \
+	--compress \
+	--partial \
+	--progress \
+	--delete \
+	--dry-run \
+	"$SOURCE" \
+	"$DEST"
 }
 
 help () {
 	echo "Backup tool. Make incremental backups."
-	echo "Usage: backup --incremental source_path destination_path"
-	echo "source_path      - Source path is the root node of the directory tree to backup."
-	echo "destination_path - Destination path will create a directory structure to store the backups."
-	echo "The backup tool makes a pull based incremental backup."
-	echo "Push based backups can be configured by having the client reach out to the backup server and request a pull"
+	echo "The backup tool makes a pull based mirror or incremental backup."
+	echo ""
+	echo "Usage examples:"
+	echo ""
+	echo "  backup --incremental user@machine:'/path/to/source/data' /path/to/destination"
+	echo ""
+	echo "  backup --mirror user@machine:'/path/to/source/data' /path/to/destination"
+	echo ""
+	echo "Note:"
+	echo "  You must configure ssh keys for authenticating with remote machines."
+	echo ""
+	echo "Warnings:"
+	echo "  Take care to correctly quote the directory path. Notably whether or not to include a trailing slash. See rsync man pages for help."
 	echo ""
 	echo "Debugging:"
-	echo "Known issue with paths on remote machines. Check you've correctly quoted remote paths!"
+	echo "  Known issue with paths on remote machines. Check you've correctly quoted remote paths!"
 }
 
 backup () {
 
     while [[ $# -gt 0 && "$1" == -* ]]; do
 	case "$1" in
-	    -i|--incremental)
+	    --incremental)
 		MODE="incremental"
+		shift
+		;;
+	    --mirror)
+		MODE="mirror"
 		shift
 		;;
 	    -v|--verbose)
@@ -118,14 +145,32 @@ backup () {
     done
 
     local SOURCE="$1"
+    if [[ -z "$SOURCE" ]]; then
+	echo "Error: You must specify a source."
+	echo "Showing help:"
+	echo ""
+	help
+	exit 1
+    fi
+
     local DEST="$2"
+    if [[ -z "$DEST" ]]; then
+	echo "Error: You must specify a destination."
+	echo "Showing help:"
+	echo ""
+	help
+	exit 1
+    fi
 
     case "$MODE" in
 	incremental)
 	    do_incremental_backup "$SOURCE" "$DEST"
 	    ;;
+	mirror)
+	    do_mirror_backup "$SOURCE" "$DEST"
+	    ;;
 	*)
-	    echo "Mode must be specified."
+	    echo "Specify a backup mode: --incremental or --mirror"
 	    exit 1
 	    ;;
     esac
