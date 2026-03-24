@@ -28,6 +28,10 @@ if ! command -v rsync &> /dev/null; then
     return 1
 fi
 
+# Global Options
+VERBOSE="false"
+MODE=""
+
 do_incremental_backup() {
 
     local DATE_TAG=""
@@ -45,11 +49,13 @@ do_incremental_backup() {
 	# Would be nice if it worked for push backups.
 	# NOTE: Pull backups seem safer from an access point of view.
 	# Maybe its fine to leave this as it is?
+	[[ "$VERBOSE" == "true" ]] && echo "Debug: Creating destination directory..."
 	mkdir -p "$DESTINATION_PATH" && echo "Directory created." || echo "Error: Can't create directory." && return 1
     fi
 
     [ ! -e "$DESTINATION_PATH/README.md" ] && echo "Generated backups using backup script. See Liam's Toolkit. https://github.com/liamtbrand/toolkit" > "$DESTINATION_PATH/README.md"
 
+    [[ "$VERBOSE" == "true" ]] && echo "Debug: Writing rsync_ignore file..."
     cat > "$DESTINATION_PATH/rsync_ignore" << EOF
 .DS_Store
 .Spotlight-V100
@@ -62,31 +68,67 @@ EOF
 # I have a feeling it may be necessary simply in order to copy everything on the machine for machine wide backups.
 # Probably need some kind of flag to indicate if the backup is a root level backup or just a local user directory.
 
-    rsync -azP \
+    rsync \
+	--archive \
+	--compress \
+	--partial --progress \
 	--link-dest="$DESTINATION_PATH/latest" \
 	--log-file="$DESTINATION_PATH/backup-$DATE_TAG.log" \
 	--exclude-from="$DESTINATION_PATH/rsync_ignore" \
 	--rsync-path="sudo rsync" \
-	"${@:3}" \
 	"$SOURCE_PATH" "$DESTINATION_PATH/backup-$DATE_TAG"
 
     rm -f "$DESTINATION_PATH/latest"
     ln -s "$DESTINATION_PATH/backup-$DATE_TAG" "$DESTINATION_PATH/latest"
 }
 
-backup() {
-    # Check arguments to script
-    if [ "$#" -lt 2 ]; then
+help () {
 	echo "Backup tool. Make incremental backups."
-	echo "Usage: backup source_path destination_path"
+	echo "Usage: backup --incremental source_path destination_path"
 	echo "source_path      - Source path is the root node of the directory tree to backup."
 	echo "destination_path - Destination path will create a directory structure to store the backups."
 	echo "The backup tool makes a pull based incremental backup."
 	echo "Push based backups can be configured by having the client reach out to the backup server and request a pull"
-	return 1
-    fi
+	echo ""
+	echo "Debugging:"
+	echo "Known issue with paths on remote machines. Check you've correctly quoted remote paths!"
+}
 
-    do_incremental_backup "${@:1}"
+backup () {
+
+    while [[ $# -gt 0 && "$1" == -* ]]; do
+	case "$1" in
+	    -i|--incremental)
+		MODE="incremental"
+		shift
+		;;
+	    -v|--verbose)
+		VERBOSE="true"
+		shift
+		;;
+	    -h|--help)
+		help
+		exit 0
+		;;
+	    *)
+		echo "Unknown option: $1"
+		exit 1
+		;;
+	esac
+    done
+
+    local SOURCE="$1"
+    local DEST="$2"
+
+    case "$MODE" in
+	incremental)
+	    do_incremental_backup "$SOURCE" "$DEST"
+	    ;;
+	*)
+	    echo "Mode must be specified."
+	    exit 1
+	    ;;
+    esac
 }
 
 backup "$@"
