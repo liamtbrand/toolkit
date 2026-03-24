@@ -135,8 +135,7 @@ do_mirror_backup () {
 	--partial \
 	--progress \
 	--delete \
-	--filter="P ${PROTECTED_FILE}" \
-	--filter="P ${PROTECTED_FILE}_OK" \
+	--filter="P BACKUP_TARGET_OK" \
 	"$SOURCE" \
 	"$DEST"
 }
