@@ -117,18 +117,15 @@ do_mirror_backup () {
     fi
     echo "Target: $DEST"
 
-    # Assert backup destination is valid.
-    # Check for presence of ok file.
-    PROTECTED_FILE="$DEST/BACKUP_TARGET"
-    if [ ! -f "$PROTECTED_FILE" ]; then
-	echo "Change this file to BACKUP_TARGET_OK to enable targeting this location." > "$PROTECTED_FILE"
-	exit 1
-    fi
-
     echo "Checking for BACKUP_TARGET_OK"
-
-    if [ ! -f "${PROTECTED_FILE}_OK" ]; then
+    PROTECTED_FILE="$DEST/BACKUP_TARGET"
+    if [ ! -f "${PROTECTED_FILE}_OK" ]; then	
 	echo "You need to rename BACKUP_TARGET to BACKUP_TARGET_OK to enable mirroring to this location."
+	# Assert backup destination is valid.
+	# Check for presence of ok file.
+	if [ ! -f "$PROTECTED_FILE" ]; then
+	    echo "Rename this file to BACKUP_TARGET_OK to enable targeting this location." > "$PROTECTED_FILE"
+	fi
 	exit 1
     fi
 
