@@ -109,6 +109,29 @@ EOF
 do_mirror_backup () {
     local SOURCE="$1"
     local DEST="$2"
+
+    # Assert target is a directory
+    if [ ! -d "$DEST" ]; then
+	echo "Directory target could not be acquired! Abort."
+	exit 1
+    fi
+    echo "Target: $DEST"
+
+    # Assert backup destination is valid.
+    # Check for presence of ok file.
+    PROTECTED_FILE="$DEST/BACKUP_TARGET"
+    if [ ! -f "$PROTECTED_FILE" ]; then
+	echo "Change this file to BACKUP_TARGET_OK to enable targeting this location." > "$PROTECTED_FILE"
+	exit 1
+    fi
+
+    echo "Checking for BACKUP_TARGET_OK"
+
+    if [ ! -f "${PROTECTED_FILE}_OK" ]; then
+	echo "You need to rename BACKUP_TARGET to BACKUP_TARGET_OK to enable mirroring to this location."
+	exit 1
+    fi
+
     rsync \
 	--verbose \
 	--archive \
@@ -116,6 +139,8 @@ do_mirror_backup () {
 	--partial \
 	--progress \
 	--delete \
+	--filter="P ${PROTECTED_FILE}" \
+	--filter="P ${PROTECTED_FILE}_OK" \
 	--dry-run \
 	"$SOURCE" \
 	"$DEST"
