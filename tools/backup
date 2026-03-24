@@ -54,7 +54,6 @@ fi
 
 # Global Options
 VERBOSE="false"
-MODE=""
 
 do_incremental_backup() {
 
@@ -167,6 +166,7 @@ backup () {
 
     local SOURCE=""
     local DEST=""
+    local MODE=""
 
     while [[ $# -gt 0 && "$1" == -* ]]; do
 	case "$1" in
