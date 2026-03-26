@@ -55,6 +55,67 @@ fi
 # Global Options
 VERBOSE="false"
 
+do_consolidate () {
+    # Consolidation walks through backups and ensures they are correctly hard-linked.
+    # This is often necessary if several backups have been made and you want to transfer these to a new location.
+    # The target location can sometimes wind up with multiple copies of the data.
+    # Consolidation helps by removing the duplication when copying
+
+    # Given --from = base, --to = target
+    # Start with an initial linked to the first base
+    # Source Base
+    # Source 2nd Full -> New 2nd Full (incremental) - points to prev new base
+    #
+    # Consolidate --from SRC --onto TARGET --to NEW_INCREMENTAL
+    #
+    # backup --consolidate --from SRC --to NEW_INCREMENTAL --base LINKDEST
+    #
+    # => rsync -avP --delete
+
+    local SOURCE="$1"
+    local DEST="$2"
+    local BASE="$3"
+
+    echo "Consolidating $SOURCE into $DEST with base $BASE"
+
+    rsync \
+	--archive \
+	--partial \
+	--progress \
+	--verbose \
+	--delete \
+	--dry-run \
+	--link-dest="$BASE" \
+	"$SOURCE" "$DEST"
+}
+
+do_consolidate_backups() {
+    # Consolidates existing incremental backups that went wrong for whatever reason.
+    # Attempts to recreate them in-order using the incremental approach.
+    local SOURCE="$1"
+    local DEST="$2"
+
+    cd "$SOURCE"
+    backupdirs=(backup-*/) # grab all backup directories
+    for i in "${!backupdirs[@]}"; do
+	if (( i == 0 )); then
+	    echo "Skipping base directory: ${backupdirs[$i]}"
+	    continue
+	fi
+	local BASE=""
+	if (( i == 1 )); then
+	    BASE="${backupdirs[0]}"
+	else
+	    local prev=$((i-1))
+	    BASE="consolidated/${backupdirs[$prev]}"
+	fi
+	do_consolidate \
+	    "$SOURCE/${backupdirs[$i]}" \
+	    "$DEST/${backupdirs[$i]}" \
+	    "$BASE"
+    done
+}
+
 do_incremental_backup() {
 
     local DATE_TAG=""
@@ -177,6 +238,10 @@ backup () {
 		MODE="mirror"
 		shift
 		;;
+	    --consolidate)
+		MODE="consolidate"
+		shift
+		;;
 	    --from)
 		SOURCE="$2"
 		shift 2
@@ -209,6 +274,9 @@ backup () {
 	    ;;
 	mirror)
 	    do_mirror_backup "$SOURCE" "$DEST"
+	    ;;
+	consolidate)
+	    do_consolidate_backups "$SOURCE" "$DEST" "$BASE"
 	    ;;
 	*)
 	    echo "Specify a backup mode: --incremental or --mirror"
