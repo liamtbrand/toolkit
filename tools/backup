@@ -99,16 +99,19 @@ do_consolidate_backups() {
     backupdirs=(backup-*/) # grab all backup directories
     for i in "${!backupdirs[@]}"; do
 	if (( i == 0 )); then
-	    echo "Skipping base directory: ${backupdirs[$i]}"
+	    # soft-duplicate base directory into the consolidated result set
+	    # Use hard links to avoid duplicating disk usage
+	    echo "Duplicating base directory using hard links: $SOURCE/${backupdirs[$i]} -> $DEST/${backupdirs[$i]}"
+	    rsync \
+		--archive \
+		--link-dest="$SOURCE/${backupdirs[$i]}" \
+		"$SOURCE/${backupdirs[$i]}" \
+		"$DEST/${backupdirs[$i]}"
 	    continue
 	fi
+	local prev=$((i-1))
 	local BASE=""
-	if (( i == 1 )); then
-	    BASE="${backupdirs[0]}"
-	else
-	    local prev=$((i-1))
-	    BASE="consolidated/${backupdirs[$prev]}"
-	fi
+	BASE="$DEST/${backupdirs[$prev]}"
 	do_consolidate \
 	    "$SOURCE/${backupdirs[$i]}" \
 	    "$DEST/${backupdirs[$i]}" \
