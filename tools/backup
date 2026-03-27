@@ -99,7 +99,10 @@ do_consolidate_backups() {
 
     cd "$SOURCE"
     backupdirs=(backup-*/) # grab all backup directories
+    echo "Backup dirs:"
+    echo "${backupdirs[@]}"
     for i in "${!backupdirs[@]}"; do
+	echo "Processing: ${backupdirs[$i]}"
 	if (( i == 0 )); then
 	    # soft-duplicate base directory into the consolidated result set
 	    # Use hard links to avoid duplicating disk usage
