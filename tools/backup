@@ -282,7 +282,7 @@ backup () {
 	    do_mirror_backup "$SOURCE" "$DEST"
 	    ;;
 	consolidate)
-	    do_consolidate_backups "$SOURCE" "$DEST" "$BASE"
+	    do_consolidate_backups "$SOURCE" "$DEST"
 	    ;;
 	*)
 	    echo "Specify a backup mode: --incremental or --mirror"
