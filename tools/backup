@@ -56,22 +56,6 @@ fi
 VERBOSE="false"
 
 do_consolidate () {
-    # Consolidation walks through backups and ensures they are correctly hard-linked.
-    # This is often necessary if several backups have been made and you want to transfer these to a new location.
-    # The target location can sometimes wind up with multiple copies of the data.
-    # Consolidation helps by removing the duplication when copying
-
-    # Given --from = base, --to = target
-    # Start with an initial linked to the first base
-    # Source Base
-    # Source 2nd Full -> New 2nd Full (incremental) - points to prev new base
-    #
-    # Consolidate --from SRC --onto TARGET --to NEW_INCREMENTAL
-    #
-    # backup --consolidate --from SRC --to NEW_INCREMENTAL --base LINKDEST
-    #
-    # => rsync -avP --delete
-
     local SOURCE="$1"
     local DEST="$2"
     local BASE="$3"
@@ -89,8 +73,9 @@ do_consolidate () {
 }
 
 do_consolidate_backups() {
-    # Consolidates existing incremental backups that went wrong for whatever reason.
-    # Attempts to recreate them in-order using the incremental approach.
+
+    # Consolidates existing incremental backups into new directory tree.
+    # Recreates them in-order using the incremental approach.
     local SOURCE="$1"
     local DEST="$2"
 
@@ -223,23 +208,43 @@ do_mirror_backup () {
 }
 
 help () {
-	echo "Backup tool. Make incremental backups."
-	echo "The backup tool makes a pull based mirror or incremental backup."
-	echo ""
-	echo "Usage examples:"
-	echo ""
-	echo "  backup --incremental --from user@machine:'/path/to/source/data' --to /path/to/destination"
-	echo ""
-	echo "  backup --mirror --from user@machine:'/path/to/source/data' --to /path/to/destination"
-	echo ""
-	echo "Note:"
-	echo "  You must configure ssh keys for authenticating with remote machines."
-	echo ""
-	echo "Warnings:"
-	echo "  Take care to correctly quote the directory path. Notably whether or not to include a trailing slash. See rsync man pages for help."
-	echo ""
-	echo "Debugging:"
-	echo "  Known issue with paths on remote machines. Check you've correctly quoted remote paths!"
+    cat <<EOF
+Backup tool. Make incremental backups.
+The backup tool makes a pull based mirror or incremental backup.
+
+Usage: backup MODE --from SRC --to DEST
+
+You must specify a MODE along with the --from and --to options.
+
+There are three modes: mirror, incremental and consolidate.
+
+  --mirror      - This mode mirrors the contents of source to destination.
+
+  --incremental - This mode creates a structured incremental backup of source to destination.
+
+  --consolidate - This mode consolidates existing structured incremental backups from source into destination.
+                  Note: This mode can be used to relocate backups onto a different disk, recreating hard-links.
+
+    Consolidation walks through existing incremental backups and consolidates them into a target location.
+    This is useful to fix unlinked backups or to transfer a series of incremental backups a new location.
+
+Usage examples:
+
+  backup --incremental --from user@machine:'/path/to/source/data' --to /path/to/destination
+
+  backup --mirror --from user@machine:'/path/to/source/data' --to /path/to/destination
+
+  backup --consolidate --from /path/to/incremental/backups --to /path/to/incremental/backups/consolidation
+
+Note:
+  You must configure ssh keys for authenticating with remote machines.
+
+Warnings:
+  Take care to correctly quote the directory path. Notably whether or not to include a trailing slash. See rsync man pages for help.
+
+Debugging:
+  Known footgun with paths on remote machines. Check you've correctly quoted remote paths!
+EOF
 }
 
 backup () {
