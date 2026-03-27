@@ -105,6 +105,7 @@ do_consolidate_backups() {
 	    rsync \
 		--archive \
 		--link-dest="$SOURCE/${backupdirs[$i]}" \
+		--dry-run \
 		"$SOURCE/${backupdirs[$i]}" \
 		"$DEST/${backupdirs[$i]}"
 	    continue
