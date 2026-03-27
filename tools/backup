@@ -62,6 +62,10 @@ do_consolidate () {
 
     echo "Consolidating $SOURCE into $DEST with base $BASE"
 
+    # Note: link-dest BASE enables hardlinking to parent.
+    #	    link-dest SOURCE enables hardlinking to existing new data
+    #	    this avoids copying from A->B on the same disk.
+
     rsync \
 	--archive \
 	--partial \
@@ -69,6 +73,7 @@ do_consolidate () {
 	--verbose \
 	--delete \
 	--link-dest="$BASE" \
+	--link-dest="$SOURCE" \
 	"$SOURCE" "$DEST"
 }
 
