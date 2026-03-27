@@ -97,6 +97,19 @@ do_consolidate_backups() {
 
     mkdir -p "$DEST"
 
+    # Check consolidation target before writing...
+    echo "Checking for CONSOLIDATION_TARGET_OK"
+    PROTECTED_FILE="$DEST/CONSOLIDATION_TARGET"
+    if [ ! -f "${PROTECTED_FILE}_OK" ]; then
+	echo "You need to rename CONSOLIDATION_TARGET to CONSOLIDATION_TARGET_OK to enable consolidation to this location."
+	# Assert consolidation destination is valid.
+	# Check for presence of ok file.
+	if [ ! -f "$PROTECTED_FILE" ]; then
+	    echo "Rename this file to CONSOLIDATION_TARGET_OK to enable targeting this location." > "$PROTECTED_FILE"
+	fi
+	exit 1
+    fi
+
     cd "$SOURCE"
     backupdirs=(backup-*/) # grab all backup directories
     echo "Backup dirs:"
@@ -188,7 +201,7 @@ do_mirror_backup () {
 
     echo "Checking for BACKUP_TARGET_OK"
     PROTECTED_FILE="$DEST/BACKUP_TARGET"
-    if [ ! -f "${PROTECTED_FILE}_OK" ]; then	
+    if [ ! -f "${PROTECTED_FILE}_OK" ]; then
 	echo "You need to rename BACKUP_TARGET to BACKUP_TARGET_OK to enable mirroring to this location."
 	# Assert backup destination is valid.
 	# Check for presence of ok file.
