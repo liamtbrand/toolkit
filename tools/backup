@@ -95,6 +95,8 @@ do_consolidate_backups() {
     local SOURCE="$1"
     local DEST="$2"
 
+    mkdir -p "$DEST"
+
     cd "$SOURCE"
     backupdirs=(backup-*/) # grab all backup directories
     for i in "${!backupdirs[@]}"; do
