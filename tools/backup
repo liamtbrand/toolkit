@@ -158,14 +158,22 @@ do_incremental_backup() {
 .CFUserTextEncoding
 EOF
 
-# TODO: Figure out if it is necessary to use "sudo rsync"
-# I have a feeling it may be necessary simply in order to copy everything on the machine for machine wide backups.
-# Probably need some kind of flag to indicate if the backup is a root level backup or just a local user directory.
+    if [ -L "$DEST/latest" ]; then
+	if [ ! -w "$DEST/latest" ]; then
+	    echo "Cannot write latest, incremental update will not work without permission. Aborting."
+	    exit 1
+	fi
+    fi
+
+    # TODO: Figure out if it is necessary to use "sudo rsync"
+    # I have a feeling it may be necessary simply in order to copy everything on the machine for machine wide backups.
+    # Probably need some kind of flag to indicate if the backup is a root level backup or just a local user directory.
 
     rsync \
 	--archive \
 	--compress \
 	--partial --progress \
+	--delete \
 	--link-dest="$DEST/latest" \
 	--log-file="$DEST/backup-$DATE_TAG.log" \
 	--exclude-from="$DEST/rsync_ignore" \
@@ -206,7 +214,6 @@ do_mirror_backup () {
 	--partial \
 	--progress \
 	--delete \
-	--dry-run \
 	--filter="P BACKUP_TARGET_OK" \
 	"$SOURCE" \
 	"$DEST"
