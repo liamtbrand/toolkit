@@ -156,6 +156,7 @@ do_incremental_backup() {
 .DocumentRevisions-V100
 .TemporaryItems
 .CFUserTextEncoding
+#recycle
 EOF
 
     if [ -L "$DEST/latest" ]; then
