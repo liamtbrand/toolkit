@@ -72,6 +72,7 @@ do_consolidate () {
 	--progress \
 	--verbose \
 	--delete \
+	--exclude="#recycle" \
 	--link-dest="$BASE" \
 	--link-dest="$SOURCE" \
 	"$SOURCE" "$DEST"
