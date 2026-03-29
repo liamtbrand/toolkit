@@ -72,7 +72,6 @@ do_consolidate () {
 	--progress \
 	--verbose \
 	--delete \
-	--exclude="#recycle" \
 	--link-dest="$BASE" \
 	--link-dest="$SOURCE" \
 	"$SOURCE" "$DEST"
@@ -157,7 +156,6 @@ do_incremental_backup() {
 .DocumentRevisions-V100
 .TemporaryItems
 .CFUserTextEncoding
-\#recycle
 EOF
 
     if [ -L "$DEST/latest" ]; then
