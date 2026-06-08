@@ -54,29 +54,59 @@ prep_environment() {
 
 control_syncthing() {
     local action="$1" # Expects "pause" or "resume"
-    local payload
+    local target_paused_state
+
+    # Double-check that jq is actually installed before running
+    if ! command -v jq &> /dev/null; then
+        echo "Error: 'jq' utility is required but not installed."
+        echo "Please install it via your package manager (e.g., brew install jq / apt install jq)."
+        exit 1
+    fi
 
     if [[ "$action" == "pause" ]]; then
         echo "=== Step 2: Pausing Syncthing Folder: $SYNCTHING_FOLDER_ID ==="
-        payload='{"paused": true}'
+        target_paused_state="true"
     else
         echo "------------------------------------------------"
         echo "=== Step 4: Resuming Syncthing Folder: $SYNCTHING_FOLDER_ID ==="
-        payload='{"paused": false}'
+        target_paused_state="false"
     fi
 
-    # Use PATCH against the folder-specific configuration endpoint
-    curl -s -X PATCH \
+    # 1. Pull the full, current live JSON configuration block for this folder
+    local current_folder_config
+    current_folder_config=$(curl -s -f -H "X-API-Key: $SYNCTHING_API_KEY" \
+        "http://localhost:8384/rest/config/folders/$SYNCTHING_FOLDER_ID")
+
+    if [ -z "$current_folder_config" ]; then
+        echo "Error: Failed to fetch the current folder configuration from Syncthing."
+        echo "Please double-check your API key and ensure Syncthing is running."
+        exit 1
+    fi
+
+    # 2. Use jq to cleanly modify the paused boolean property
+    local modified_payload
+    modified_payload=$(echo "$current_folder_config" | jq --argjson p "$target_paused_state" '.paused = $p')
+
+    # 3. PUT the modified full-schema configuration back to the API server
+    local http_status
+    http_status=$(curl -s -o /dev/null -w "%{http_code}" -X PUT \
       -H "X-API-Key: $SYNCTHING_API_KEY" \
       -H "Content-Type: application/json" \
-      -d "$payload" \
-      "http://localhost:8384/rest/config/folders/$SYNCTHING_FOLDER_ID"
+      -d "$modified_payload" \
+      "http://localhost:8384/rest/config/folders/$SYNCTHING_FOLDER_ID")
 
-    # Give the system time to settle if freezing file watchers
+    if [[ "$http_status" != "200" && "$http_status" != "204" ]]; then
+        echo "Error: Syncthing configuration update rejected with HTTP Status: $http_status"
+        exit 1
+    fi
+
+    echo "-> Success: Folder state updated successfully."
+
     if [[ "$action" == "pause" ]]; then
         sleep 3
     fi
 }
+
 
 
 # ==============================================================================
