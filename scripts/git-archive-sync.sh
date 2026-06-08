@@ -5,7 +5,10 @@ set -euo pipefail
 
 # Global Configuration Path Defaults (Safely handles spaces without escapes)
 ARCHIVE_DIR="${1:-"$HOME/Sync/Archived Git Projects"}"
-LIST_FILE="$ARCHIVE_DIR/repositories.txt"
+
+# Declare globals explicitly so they are safely available to the exit trap
+SYNCTHING_FOLDER_ID=""
+SYNCTHING_API_KEY="${SYNCTHING_API_KEY:-}"
 
 # ==============================================================================
 # 1. CORE UTILITY FUNCTIONS
@@ -13,7 +16,7 @@ LIST_FILE="$ARCHIVE_DIR/repositories.txt"
 
 load_config() {
     # Check if the variable is empty or unset
-    if [ -z "${SYNCTHING_API_KEY:-}" ]; then
+    if [ -z "${SYNCTHING_API_KEY}" ]; then
         echo "Error: SYNCTHING_API_KEY environment variable is not set."
         echo "Usage: SYNCTHING_API_KEY=\"your_key\" $0 [/path/to/git_archive]"
         exit 1
@@ -21,8 +24,10 @@ load_config() {
 
     # Resolve the final directory target path from fallback
     ARCHIVE_ROOT="${ARCHIVE_ROOT_DIR:-$ARCHIVE_DIR}"
-}
 
+    # Securely map tracker file to the active root directory
+    LIST_FILE="$ARCHIVE_ROOT/repositories.txt"
+}
 
 resolve_folder_id() {
     # Dynamically locate the marker file using find instead of ls
@@ -44,7 +49,6 @@ resolve_folder_id() {
     fi
 }
 
-
 prep_environment() {
     # Ensure all target paths and tracker files exist before execution
     touch "$LIST_FILE"
@@ -54,59 +58,33 @@ prep_environment() {
 
 control_syncthing() {
     local action="$1" # Expects "pause" or "resume"
-    local target_paused_state
-
-    # Double-check that jq is actually installed before running
-    if ! command -v jq &> /dev/null; then
-        echo "Error: 'jq' utility is required but not installed."
-        echo "Please install it via your package manager (e.g., brew install jq / apt install jq)."
-        exit 1
-    fi
 
     if [[ "$action" == "pause" ]]; then
         echo "=== Step 2: Pausing Syncthing Folder: $SYNCTHING_FOLDER_ID ==="
-        target_paused_state="true"
     else
         echo "------------------------------------------------"
         echo "=== Step 4: Resuming Syncthing Folder: $SYNCTHING_FOLDER_ID ==="
-        target_paused_state="false"
     fi
 
-    # 1. Pull the full, current live JSON configuration block for this folder
-    local current_folder_config
-    current_folder_config=$(curl -s -f -H "X-API-Key: $SYNCTHING_API_KEY" \
-        "http://localhost:8384/rest/config/folders/$SYNCTHING_FOLDER_ID")
-
-    if [ -z "$current_folder_config" ]; then
-        echo "Error: Failed to fetch the current folder configuration from Syncthing."
-        echo "Please double-check your API key and ensure Syncthing is running."
-        exit 1
-    fi
-
-    # 2. Use jq to cleanly modify the paused boolean property
-    local modified_payload
-    modified_payload=$(echo "$current_folder_config" | jq --argjson p "$target_paused_state" '.paused = $p')
-
-    # 3. PUT the modified full-schema configuration back to the API server
+    # Execute a direct POST against the targeted system runtime control route
     local http_status
-    http_status=$(curl -s -o /dev/null -w "%{http_code}" -X PUT \
+    http_status=$(curl -s -k -o /dev/null -w "%{http_code}" -X POST \
       -H "X-API-Key: $SYNCTHING_API_KEY" \
-      -H "Content-Type: application/json" \
-      -d "$modified_payload" \
-      "http://localhost:8384/rest/config/folders/$SYNCTHING_FOLDER_ID")
+      "https://localhost:8384/rest/system/${action}?folder=${SYNCTHING_FOLDER_ID}")
 
-    if [[ "$http_status" != "200" && "$http_status" != "204" ]]; then
-        echo "Error: Syncthing configuration update rejected with HTTP Status: $http_status"
+    # Syncthing returns 200 OK on a successful post invocation change
+    if [[ "$http_status" != "200" ]]; then
+        echo "Error: Syncthing API rejected folder action '$action' with status code: $http_status"
         exit 1
     fi
 
-    echo "-> Success: Folder state updated successfully."
+    echo "-> Success: Syncthing updated folder state."
 
+    # Give the system time to completely freeze file watchers
     if [[ "$action" == "pause" ]]; then
         sleep 3
     fi
 }
-
 
 
 # ==============================================================================
