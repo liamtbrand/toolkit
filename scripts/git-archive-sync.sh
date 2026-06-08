@@ -5,7 +5,6 @@ set -euo pipefail
 
 # Global Configuration Path Defaults (Safely handles spaces without escapes)
 ARCHIVE_DIR="${1:-"$HOME/Sync/Archived Git Projects"}"
-ENV_FILE="$ARCHIVE_DIR/.env"
 LIST_FILE="$ARCHIVE_DIR/repositories.txt"
 
 # ==============================================================================
@@ -13,20 +12,17 @@ LIST_FILE="$ARCHIVE_DIR/repositories.txt"
 # ==============================================================================
 
 load_config() {
-    if [ -f "$ENV_FILE" ]; then
-        # Disable unset variable alerts temporarily to cleanly source external file
-        set +u
-        source "$ENV_FILE"
-        set -u
-    else
-        echo "Error: Local config file (.env) not found at $ENV_FILE"
-        echo "Usage: $0 [/path/to/syncthing/git_archive]"
+    # Check if the variable is empty or unset
+    if [ -z "${SYNCTHING_API_KEY:-}" ]; then
+        echo "Error: SYNCTHING_API_KEY environment variable is not set."
+        echo "Usage: SYNCTHING_API_KEY=\"your_key\" $0 [/path/to/git_archive]"
         exit 1
     fi
 
-    # Resolve the final directory target path from config or fallback
+    # Resolve the final directory target path from fallback
     ARCHIVE_ROOT="${ARCHIVE_ROOT_DIR:-$ARCHIVE_DIR}"
 }
+
 
 resolve_folder_id() {
     # Dynamically locate the marker file using find instead of ls
