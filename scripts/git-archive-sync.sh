@@ -28,6 +28,27 @@ load_config() {
     ARCHIVE_ROOT="${ARCHIVE_ROOT_DIR:-$ARCHIVE_DIR}"
 }
 
+resolve_folder_id() {
+    # Dynamically locate the marker file using find instead of ls
+    local marker_file
+    marker_file=$(find "$ARCHIVE_ROOT/.stfolder" -maxdepth 1 -type f -name "syncthing-folder-*.txt" -print -quit)
+
+    if [ -z "$marker_file" ] || [ ! -f "$marker_file" ]; then
+        echo "Error: Could not locate Syncthing marker text file inside $ARCHIVE_ROOT/.stfolder/"
+        echo "Please verify this folder is correctly established inside the Syncthing GUI."
+        exit 1
+    fi
+
+    # Read the folderID property cleanly from the file contents
+    SYNCTHING_FOLDER_ID=$(grep "folderID:" "$marker_file" | awk '{print $2}' | tr -d '\r\n[:space:]')
+
+    if [ -z "$SYNCTHING_FOLDER_ID" ]; then
+        echo "Error: Found Syncthing marker file, but failed to parse a 'folderID:' value from it."
+        exit 1
+    fi
+}
+
+
 prep_environment() {
     # Ensure all target paths and tracker files exist before execution
     touch "$LIST_FILE"
@@ -122,7 +143,6 @@ process_repo() {
     fi
 }
 
-
 process_all_archives() {
     echo ""
     echo "=== Step 3: Processing Repositories From List ==="
@@ -141,6 +161,7 @@ process_all_archives() {
 
 main() {
     load_config
+    resolve_folder_id
     prep_environment
     discover_github_repos
 
