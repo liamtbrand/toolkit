@@ -54,22 +54,30 @@ prep_environment() {
 
 control_syncthing() {
     local action="$1" # Expects "pause" or "resume"
+    local payload
 
     if [[ "$action" == "pause" ]]; then
         echo "=== Step 2: Pausing Syncthing Folder: $SYNCTHING_FOLDER_ID ==="
+        payload='{"paused": true}'
     else
         echo "------------------------------------------------"
         echo "=== Step 4: Resuming Syncthing Folder: $SYNCTHING_FOLDER_ID ==="
+        payload='{"paused": false}'
     fi
 
-    curl -s -X POST -H "X-API-Key: $SYNCTHING_API_KEY" \
-      "http://localhost:8384/rest/system/${action}?folder=$SYNCTHING_FOLDER_ID"
+    # Use PATCH against the folder-specific configuration endpoint
+    curl -s -X PATCH \
+      -H "X-API-Key: $SYNCTHING_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d "$payload" \
+      "http://localhost:8384/rest/config/folders/$SYNCTHING_FOLDER_ID"
 
     # Give the system time to settle if freezing file watchers
     if [[ "$action" == "pause" ]]; then
         sleep 3
     fi
 }
+
 
 # ==============================================================================
 # 2. REPOSITORY MANAGEMENT FUNCTIONS
