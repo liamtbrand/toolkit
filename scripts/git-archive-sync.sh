@@ -58,22 +58,27 @@ prep_environment() {
 
 control_syncthing() {
     local action="$1" # Expects "pause" or "resume"
+    local is_paused="true"
 
     if [[ "$action" == "pause" ]]; then
         echo "=== Step 2: Pausing Syncthing Folder: $SYNCTHING_FOLDER_ID ==="
+        is_paused="true"
     else
         echo "------------------------------------------------"
         echo "=== Step 4: Resuming Syncthing Folder: $SYNCTHING_FOLDER_ID ==="
+        is_paused="false"
     fi
 
-    # Execute a direct POST against the targeted system runtime control route
+    # Execute a configuration PATCH against the targeted folder config route
     local http_status
-    http_status=$(curl -s -k -o /dev/null -w "%{http_code}" -X POST \
+    http_status=$(curl -s -k -o /dev/null -w "%{http_code}" -X PATCH \
       -H "X-API-Key: $SYNCTHING_API_KEY" \
-      "https://localhost:8384/rest/system/${action}?folder=${SYNCTHING_FOLDER_ID}")
+      -H "Content-Type: application/json" \
+      -d "{\"paused\": ${is_paused}}" \
+      "https://localhost:8384/rest/config/folders/${SYNCTHING_FOLDER_ID}")
 
-    # Syncthing returns 200 OK on a successful post invocation change
-    if [[ "$http_status" != "200" ]]; then
+    # Syncthing returns 200 OK or 204 No Content on a successful configuration patch
+    if [[ "$http_status" != "200" && "$http_status" != "204" ]]; then
         echo "Error: Syncthing API rejected folder action '$action' with status code: $http_status"
         exit 1
     fi
