@@ -68,6 +68,13 @@ install_dependencies() {
         # Safely read file line by line under strict mode
         while IFS= read -r package || [ -n "$package" ]; do
             [[ -z "$package" || "$package" =~ ^# ]] && continue
+
+            # Skip if the command exists anywhere in your system PATH
+            if command -v "$package" &> /dev/null; then
+                tk_log "$package already exists on this system. Skipping..."
+                continue
+            fi
+
             tk_log "Installing $package via brew..."
             brew install "$package"
         done < "$DEPENDENCIES_FILE"
@@ -100,7 +107,8 @@ PERSONAL_ZPROFILE="$HOME/.zprofile.personal"
 ZPROFILE_HOOK="[[ -f $PERSONAL_ZPROFILE ]] && source $PERSONAL_ZPROFILE"
 
 ZSHRC="$HOME/.zshrc"
-PERSONAL_ZSHRC="$HOME/.zshrc.personal"
+XDG_ZSHRC="$HOME/.config/zsh/.zshrc"
+PERSONAL_ZSHRC="$HOME/.config/zsh/.zshrc.personal"
 ZSHRC_HOOK="[[ -f $PERSONAL_ZSHRC ]] && source $PERSONAL_ZSHRC"
 
 # Function to safely add a hook to a file
@@ -127,6 +135,7 @@ add_hook() {
 # Run the function for both files
 add_hook "$ZPROFILE" "$ZPROFILE_HOOK"
 add_hook "$ZSHRC" "$ZSHRC_HOOK"
+add_hook "$XDG_ZSHRC" "$ZSHRC_HOOK"
 
 # =========================================================================== #
 
