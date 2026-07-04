@@ -46,39 +46,6 @@ __private_config_init () {
 
 }
 
-ZMODDIR="$ZDOTDIR/zshrc.d"
-ZMODSLIST=()
-__private_source_module () {
-	[ -f "$ZMODDIR/$1" ] && source "$ZMODDIR/$1" && ZMODSLIST+=("$1") || echo "[config]: Unable to find module $1"
-}
-
-__private_config_modules_load () {
-
-	# Configuration and modifications
-	__private_source_module "editor.sh"
-	__private_source_module "tmux.sh"
-	__private_source_module "gpg.sh"
-	__private_source_module "ls.sh"
-	__private_source_module "shortcuts.sh"
-	__private_source_module "prompt.sh"
-	__private_source_module "info.sh"
-	__private_source_module "please.sh"
-	__private_source_module "haskell.sh"
-
-	# Tools
-	__private_source_module "git-annex.sh"
-	__private_source_module "tailscale.sh"
-	__private_source_module "network.sh"
-	__private_source_module "aliases.sh"
-	__private_source_module "keyboard.sh"
-	__private_source_module "motd.sh"
-
-}
-
-__private_config_modules_list () {
-	echo "${ZMODSLIST[@]}"
-}
-
 config () {
 	case "$1" in
 		"git")
@@ -86,12 +53,6 @@ config () {
 			;;
 		"init")
 			__private_config_init
-			;;
-		"status")
-			# Shortcut to git status
-			__private_config_git "${@:1}"
-			;;
-		"mods"|"modules")
 			;;
 		*)
 			echo "Config tool. Configuration repo: $CONFIG_REPO"
@@ -101,5 +62,3 @@ config () {
 }
 
 config "$@"
-
-__private_config_modules_load
