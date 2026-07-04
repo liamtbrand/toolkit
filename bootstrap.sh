@@ -10,8 +10,12 @@ set -euo pipefail
 # I want to be able to bootstrap installing this.
 
 TOOLKIT_UPSTREAM_URL="git@github.com:liamtbrand/toolkit.git"
+CONFIG_REMOTE="git@github.com:liamtbrand/config.git"
+PROFILE_REMOTE="git@github.com:liamtbrand/profile.git"
 
-TOOLKIT_REPO_PATH="$HOME/toolkit"
+REPOS_DIR="$HOME/repos"
+
+TOOLKIT_REPO_PATH="$REPOS_DIR/toolkit"
 
 tk_log() {
 	echo "[toolkit] $*"
@@ -111,6 +115,10 @@ XDG_ZSHRC="$HOME/.config/zsh/.zshrc"
 PERSONAL_ZSHRC="$HOME/.config/zsh/.zshrc.personal"
 ZSHRC_HOOK="[[ -f $PERSONAL_ZSHRC ]] && source $PERSONAL_ZSHRC"
 
+BIN_TARGET="$HOME/.local/bin"
+mkdir -p "$BIN_TARGET"
+PATH_HOOK='export PATH="$HOME/.local/bin:$PATH"'
+
 # Function to safely add a hook to a file
 add_hook() {
     local target_file="$1"
@@ -132,15 +140,22 @@ add_hook() {
     fi
 }
 
-# Run the function for both files
+# Hook in path first before adding personal configuration
+add_hook "$ZSHRC" "$PATH_HOOK"
+add_hook "$XDG_ZSHRC" "$PATH_HOOK"
+
+# Add the personal zprofile and zshrc hooks
 add_hook "$ZPROFILE" "$ZPROFILE_HOOK"
 add_hook "$ZSHRC" "$ZSHRC_HOOK"
 add_hook "$XDG_ZSHRC" "$ZSHRC_HOOK"
 
 # =========================================================================== #
 
-tk_log "Temporarily adding tools to path..."
-export PATH="$HOME/toolkit/tools:$PATH"
+tk_log "Symlinking tools into $BIN_TARGET"
+
+ln -sf "$TOOLKIT_REPO_PATH/tools/config" "$BIN_TARGET"
+ln -sf "$TOOLKIT_REPO_PATH/tools/profile" "$BIN_TARGET"
+ln -sf "$TOOLKIT_REPO_PATH/tools/toolkit" "$BIN_TARGET"
 
 tk_log "Bootstrap complete. To finalize, use config git status to review and update configuration."
 tk_log "You will likely need to restore configuration if this is a new setup."
