@@ -9,9 +9,6 @@ set -euo pipefail
 # Likewise, tools like fzf are nice to have.
 # I want to be able to bootstrap installing these.
 
-TOOLKIT_UPSTREAM_URL="git@github.com:liamtbrand/toolkit.git"
-
-TOOLKIT_REPO_PATH="$HOME/toolkit"
 TOOLKIT_GIT_PATH="/usr/bin/git"
 
 __private_toolkit_git() {

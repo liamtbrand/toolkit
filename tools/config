@@ -29,12 +29,9 @@
 
 # The repo names are in order of detection.
 # Some systems use dotfiles.git others use config.git.
-REPONAMES="dotfiles.git config.git"
-
-CONFIG_REPO="$HOME/dotfiles.git"
 
 __private_config_git () {
-	/usr/bin/git --git-dir="$CONFIG_REPO" --work-tree="$HOME" "${@:1}"
+	/usr/bin/git --git-dir="$CONFIG_REPO_PATH" --work-tree="$HOME" "${@:1}"
 }
 
 # To bootstrap config, simply copy this script and execute "config init"
@@ -55,7 +52,7 @@ config () {
 			__private_config_init
 			;;
 		*)
-			echo "Config tool. Configuration repo: $CONFIG_REPO"
+			echo "Config tool. Configuration repo: $CONFIG_REPO_PATH"
 			echo "Usage: config git <command>"
 			;;
 	esac
