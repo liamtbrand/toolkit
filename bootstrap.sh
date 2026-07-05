@@ -165,10 +165,6 @@ XDG_ZSHRC="$HOME/.config/zsh/.zshrc"
 PERSONAL_ZSHRC="$HOME/.config/zsh/.zshrc.personal"
 ZSHRC_HOOK="[[ -f $PERSONAL_ZSHRC ]] && source $PERSONAL_ZSHRC"
 
-BIN_TARGET="$HOME/.local/bin"
-mkdir -p "$BIN_TARGET"
-PATH_HOOK='export PATH="$HOME/.local/bin:$PATH"'
-
 # Function to safely add a hook to a file
 add_hook() {
     local target_file="$1"
@@ -190,22 +186,23 @@ add_hook() {
     fi
 }
 
-# Hook in path first before adding personal configuration
-add_hook "$ZSHRC" "$PATH_HOOK"
-add_hook "$XDG_ZSHRC" "$PATH_HOOK"
+# Hook in environment variables first
+SOURCE_LINE="[[ -f \$HOME/.config/toolkit/env ]] && source \$HOME/.config/toolkit/env"
+add_hook "$ZSHRC" "$SOURCE_LINE"
+add_hook "$XDG_ZSHRC" "$SOURCE_LINE"
 
 # Add the personal zprofile and zshrc hooks
 add_hook "$ZPROFILE" "$ZPROFILE_HOOK"
 add_hook "$ZSHRC" "$ZSHRC_HOOK"
 add_hook "$XDG_ZSHRC" "$ZSHRC_HOOK"
 
-SOURCE_LINE="[[ -f \$HOME/.config/toolkit/env ]] && source \$HOME/.config/toolkit/env"
-add_hook "$ZSHRC" "$SOURCE_LINE"
-add_hook "$XDG_ZSHRC" "$SOURCE_LINE"
-
 # =========================================================================== #
 
+BIN_TARGET="$HOME/.local/bin"
 tk_log "Symlinking tools into $BIN_TARGET"
+
+BIN_TARGET="$HOME/.local/bin"
+mkdir -p "$BIN_TARGET"
 
 ln -sf "$TOOLKIT_REPO_PATH/tools/config" "$BIN_TARGET"
 ln -sf "$TOOLKIT_REPO_PATH/tools/profile" "$BIN_TARGET"
