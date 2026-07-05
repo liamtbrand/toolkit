@@ -7,3 +7,4 @@ zsh-autosuggestions
 zsh-syntax-highlighting
 git-delta
 trash
+fastfetch
