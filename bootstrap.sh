@@ -196,7 +196,6 @@ add_hook() {
 # Hook in environment variables first
 SOURCE_LINE="[[ -f \$HOME/.config/toolkit/env ]] && source \$HOME/.config/toolkit/env"
 add_hook "$ZSHRC" "$SOURCE_LINE"
-add_hook "$XDG_ZSHRC" "$SOURCE_LINE"
 
 # Add the personal zprofile and zshrc hooks
 add_hook "$ZPROFILE" "$ZPROFILE_HOOK"
