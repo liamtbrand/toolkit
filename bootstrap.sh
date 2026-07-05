@@ -156,15 +156,21 @@ install_dependencies
 # Hook configuration
 
 # Define the targets and hooks
-ZPROFILE="$HOME/.zprofile"
-XDG_ZPROFILE="$HOME/.config/zsh/.zprofile"
 PERSONAL_ZPROFILE="$HOME/.config/zsh/.zprofile.personal"
 ZPROFILE_HOOK="[[ -f $PERSONAL_ZPROFILE ]] && source $PERSONAL_ZPROFILE"
+if [ -f "$HOME/.config/zsh/.zprofile" ]; then
+    ZPROFILE="$HOME/.config/zsh/.zprofile"
+else
+    ZPROFILE="$HOME/.zprofile"
+fi
 
-ZSHRC="$HOME/.zshrc"
-XDG_ZSHRC="$HOME/.config/zsh/.zshrc"
 PERSONAL_ZSHRC="$HOME/.config/zsh/.zshrc.personal"
 ZSHRC_HOOK="[[ -f $PERSONAL_ZSHRC ]] && source $PERSONAL_ZSHRC"
+if [ -f "$HOME/.config/zsh/.zshrc" ]; then
+    ZSHRC="$HOME/.config/zsh/.zshrc"
+else
+    ZSHRC="$HOME/.zshrc"
+fi
 
 # Function to safely add a hook to a file
 add_hook() {
@@ -193,11 +199,8 @@ add_hook "$ZSHRC" "$SOURCE_LINE"
 add_hook "$XDG_ZSHRC" "$SOURCE_LINE"
 
 # Add the personal zprofile and zshrc hooks
-# TODO: Select the existing file or create default here...
 add_hook "$ZPROFILE" "$ZPROFILE_HOOK"
-add_hook "$XDG_ZPROFILE" "$ZPROFILE_HOOK"
 add_hook "$ZSHRC" "$ZSHRC_HOOK"
-add_hook "$XDG_ZSHRC" "$ZSHRC_HOOK"
 
 # =========================================================================== #
 
