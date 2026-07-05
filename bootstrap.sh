@@ -98,6 +98,17 @@ else
 	tk_log "origin is correctly configured to $TOOLKIT_REMOTE"
 fi
 
+# Configure config.git
+if [ ! -d "$CONFIG_REPO_PATH" ] ; then
+    tk_log "config.git not found at $CONFIG_REPO_PATH. cloning from upstream..."
+    git clone --bare "$CONFIG_REMOTE" "$CONFIG_REPO_PATH"
+else
+    tk_log "config found at $CONFIG_REPO_PATH"
+fi
+
+# Configure config.git init setup
+config init
+
 # =========================================================================== #
 # Install dependencies
 
