@@ -4,12 +4,7 @@ set -euo pipefail
 # Git repository management tool
 # Use this tool to manage git repositories on your machine.
 
-SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-LIB_PATH="$SCRIPT_DIR/../libraries/helpers.sh"
-if [[ ! -f "$LIB_PATH" ]] ; then
-	echo "FATAL: Helper library not found at $LIB_PATH"
-	exit 1
-fi
+LIB_PATH="$TOOLKIT_REPO_PATH/libraries/helpers.sh"
 source "$LIB_PATH"
 
 # Preconditions
@@ -24,18 +19,18 @@ source "$LIB_PATH"
 
 # === CONFIG SETTINGS ===
 
-REPOS_DIR="$HOME/.config/repos"
+REPOS_CONFIG_PATH="$HOME/.config/repos"
 
-mkdir -p "$REPOS_DIR"
+mkdir -p "$REPOS_CONFIG_PATH"
 
-REPOS_PATHS_FILE="$REPOS_DIR/paths"
+REPOS_PATHS_FILE="$REPOS_CONFIG_PATH/paths"
 if ! [ -e "$REPOS_PATHS_FILE" ] ; then
 	touch "$REPOS_PATHS_FILE"
 fi
 
 # The ignore file lists out paths to ignore when processing repos
 # TODO: Enable this
-REPOS_IGNORE_FILE=$REPOS_DIR/ignore
+REPOS_IGNORE_FILE=$REPOS_CONFIG_PATH/ignore
 if ! [ -e "$REPOS_IGNORE_FILE" ] ; then
 	touch "$REPOS_IGNORE_FILE"
 fi

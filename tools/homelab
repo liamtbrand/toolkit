@@ -97,3 +97,5 @@ homelab() {
 			;;
 	 esac
 }
+
+homelab "$@"
