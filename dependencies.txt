@@ -8,3 +8,5 @@ zsh-syntax-highlighting
 git-delta
 trash
 fastfetch
+tree-sitter
+tree-sitter-cli
