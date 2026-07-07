@@ -8,17 +8,18 @@ set -euo pipefail
 # To simplify matters, you should symlink from there to your actual notes repository.
 # This enables consistent use of the notes tool across systems without modification.
 
-NOTES_REPOSITORY_PATH="$HOME/notes/"
+NOTES_GIT_DIR="$REPOS_DIR/notes.git"
+NOTES_PATH="$HOME/notes"
 
 __private_notes_git () {
-	/usr/bin/git --git-dir="$NOTES_REPOSITORY_PATH/.git" --work-tree="$NOTES_REPOSITORY_PATH" "${@:1}"
+	/usr/bin/git --git-dir="$NOTES_GIT_DIR" --work-tree="$NOTES_PATH" "${@:1}"
 }
 
 __private_notes_init () {
 	# This binds the help page to open in neovim by pressing o.
-	alias o="cd '${NOTES_REPOSITORY_PATH}'; $EDITOR notes.md; cd - >/dev/null"
+	alias o="cd '${NOTES_PATH}'; $EDITOR notes.md; cd - >/dev/null"
 	# Obsidian
-	alias help="cd '${NOTES_REPOSITORY_PATH}'; $EDITOR Help.md; cd - >/dev/null"
+	alias help="cd '${NOTES_PATH}'; $EDITOR Help.md; cd - >/dev/null"
 }
 
 notes () {
@@ -31,8 +32,10 @@ notes () {
 			__private_notes_git "${@:2}"
 			;;
 		*)
-			echo "Notes tool. Repo at: $NOTES_REPOSITORY_PATH"
+			echo "Notes tool."
 			echo "Manage notes with git."
+			echo "Notes at: $NOTES_PATH"
+			echo "Repo at: $NOTES_GIT_DIR"
 			echo "Open notes with 'o' or 'ctrl+b + ctrl+o'"
 			;;
 	esac
