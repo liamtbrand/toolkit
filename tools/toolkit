@@ -49,6 +49,9 @@ toolkit () {
 		"git")
 			__private_toolkit_git "${@:2}"
 			;;
+		"env")
+			$EDITOR ~/.config/toolkit/env
+			;;
 		*)
 			__private_toolkit_description
 			;;
