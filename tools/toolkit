@@ -15,14 +15,71 @@ __private_toolkit_git() {
 	$TOOLKIT_GIT_PATH --git-dir="$TOOLKIT_REPO_PATH/.git" --work-tree="$TOOLKIT_REPO_PATH" "${@:1}"
 }
 
-__private_toolkit_description() {
-	local GIT_SHA=""
-	GIT_SHA=$(git -C "$TOOLKIT_REPO_PATH" rev-parse HEAD)	
-	local MODIFIED=""
-	if [ -n "$(git -C "$TOOLKIT_REPO_PATH" status --porcelain)" ] ; then
-		MODIFIED="(Modified)"
+__private_toolkit_version() {
+	local REPO_DIR="$TOOLKIT_REPO_PATH"
+
+	local GIT_SHA
+	GIT_SHA=$(git -C "$REPO_DIR" rev-parse HEAD)
+
+	local COMMIT_DATE
+	COMMIT_DATE=$(git -C "$REPO_DIR" log -1 --format="%cd" --date=short)
+
+	# 1. Count how many commits origin/main is ahead of local HEAD
+	local BEHIND=""
+	local STATUS=""
+	BEHIND=$(git -C "$REPO_DIR" rev-list --count HEAD..origin/main 2>/dev/null)
+
+	if [ -n "$BEHIND" ] && [ "$BEHIND" -gt 0 ]; then
+		STATUS=" - Update Available ($BEHIND new commits)"
 	fi
-	echo "Liam's Toolkit. Version: $GIT_SHA $MODIFIED"
+
+	# 2. Check for local modifications
+	local MODIFIED=""
+	if [ -n "$(git -C "$REPO_DIR" status --porcelain)" ]; then
+		MODIFIED=" (Modified)"
+	fi
+
+	echo "Liam's Toolkit. Version: $GIT_SHA [$COMMIT_DATE]$MODIFIED$STATUS"
+}
+
+__private_toolkit_check_updates() {
+	local REPO_DIR="$TOOLKIT_REPO_PATH"
+
+	echo "Checking for updates..."
+	# Fetch updates synchronously since the user explicitly asked for it
+	if ! git -C "$REPO_DIR" fetch origin 2>/dev/null; then
+		echo "Error: Could not connect to remote repository."
+		return 1
+	fi
+
+	# Check how many commits we are behind
+	local BEHIND
+	BEHIND=$(git -C "$REPO_DIR" rev-list --count HEAD..@\{u\} 2>/dev/null)
+
+	if [ -n "$BEHIND" ] && [ "$BEHIND" -gt 0 ]; then
+		echo "An update is available! You are behind by $BEHIND commit(s)."
+		echo "Run 'git -C $REPO_DIR pull' to update."
+	else
+		echo "Liam's Toolkit is up to date."
+	fi
+}
+
+__private_toolkit_upgrade() {
+	local REPO_DIR="$TOOLKIT_REPO_PATH"
+
+	echo "Upgrading Liam's Toolkit..."
+
+	# 1. Use git -C to pull from origin main without changing your current terminal directory
+	if git -C "$REPO_DIR" pull origin main; then
+		echo "Successfully upgraded to the latest version!"
+	else
+		echo "Error: Upgrade failed. Please check your network connection or local changes."
+		return 1
+	fi
+}
+
+__private_toolkit_description() {
+	__private_toolkit_version
 	echo "Manage configuration using: config"
 	echo "Available tools:"
 	config modules
@@ -42,19 +99,28 @@ __private_toolkit_description() {
 	echo "  delta"
 }
 
-toolkit () {
+toolkit() {
 	local cmd=""
 	cmd="${1:-help}"
 	case "$cmd" in
-		"git")
-			__private_toolkit_git "${@:2}"
-			;;
-		"env")
-			$EDITOR ~/.config/toolkit/env
-			;;
-		*)
-			__private_toolkit_description
-			;;
+	"git")
+		__private_toolkit_git "${@:2}"
+		;;
+	"env")
+		$EDITOR ~/.config/toolkit/env
+		;;
+	"version")
+		__private_toolkit_version
+		;;
+	"update")
+		__private_toolkit_check_updates
+		;;
+	"upgrade")
+		__private_toolkit_upgrade
+		;;
+	*)
+		__private_toolkit_description
+		;;
 	esac
 }
 
