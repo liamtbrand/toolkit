@@ -39,7 +39,7 @@ __private_toolkit_version() {
 		MODIFIED=" (Modified)"
 	fi
 
-	echo "Liam's Toolkit. Version: $GIT_SHA [$COMMIT_DATE]$MODIFIED$STATUS"
+	echo "Toolkit Version: $GIT_SHA [$COMMIT_DATE]$MODIFIED$STATUS"
 }
 
 __private_toolkit_check_updates() {
