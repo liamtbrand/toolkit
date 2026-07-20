@@ -22,6 +22,61 @@ __private_notes_init () {
 	alias help="cd '${NOTES_PATH}'; $EDITOR Help.md; cd - >/dev/null"
 }
 
+__private_notes_version() {
+	local REPO_DIR="$NOTES_GIT_DIR"
+
+	local GIT_SHA
+	GIT_SHA=$(git --git-dir="$REPO_DIR" --work-tree="$NOTES_PATH" rev-parse HEAD)
+
+	local COMMIT_DATE
+	COMMIT_DATE=$(git --git-dir="$REPO_DIR" --work-tree="$NOTES_PATH" log -1 --format="%cd" --date=short)
+
+	# 2. Check for local modifications
+	local MODIFIED=""
+	if [ -n "$(git --git-dir="$REPO_DIR" --work-tree="$NOTES_PATH" status --porcelain)" ]; then
+		MODIFIED=" (Modified Locally)"
+	fi
+
+	echo "Notes Version: $GIT_SHA [$COMMIT_DATE]$MODIFIED"
+}
+
+__private_notes_check_updates() {
+	local REPO_DIR="$NOTES_GIT_DIR"
+
+	echo "Checking for updates..."
+	# Fetch updates synchronously since the user explicitly asked for it
+	if ! git --git-dir="$REPO_DIR" --work-tree="$NOTES_PATH" fetch origin 2>/dev/null; then
+		echo "Error: Could not connect to remote repository."
+		return 1
+	fi
+
+	# Check how many commits we are behind
+	local BEHIND
+	BEHIND=$(git --git-dir="$REPO_DIR" --work-tree="$NOTES_PATH" rev-list --count HEAD..@\{u\} 2>/dev/null)
+
+	if [ -n "$BEHIND" ] && [ "$BEHIND" -gt 0 ]; then
+		echo "An update is available! You are behind by $BEHIND commit(s)."
+		echo "Run 'git -C $REPO_DIR pull' to update."
+	else
+		echo "Config is up to date."
+	fi
+}
+
+__private_notes_update() {
+	local REPO_DIR="$NOTES_GIT_DIR"
+
+	echo "Updating notes..."
+
+	# 1. Use git -C to pull from origin main without changing your current terminal directory
+	if git --git-dir="$REPO_DIR" --work-tree="$NOTES_PATH" pull origin main; then
+		echo "Successfully updated to the latest version!"
+	else
+		echo "Error: Update failed. Please check your network connection or local changes."
+		return 1
+	fi
+}
+
+
 notes () {
 	command="${1:-help}"
 	case "$command" in
@@ -30,6 +85,15 @@ notes () {
 			;;
 		"git")
 			__private_notes_git "${@:2}"
+			;;
+		"version")
+			__private_notes_version
+			;;
+		"update")
+			__private_notes_check_updates
+			;;
+		"upgrade")
+			__private_notes_update
 			;;
 		*)
 			echo "Notes tool."

@@ -64,7 +64,7 @@ __private_config_version() {
 	# 2. Check for local modifications
 	local MODIFIED=""
 	if [ -n "$(git -C "$REPO_DIR" --work-tree="$HOME" status --porcelain)" ]; then
-		MODIFIED=" (Modified)"
+		MODIFIED=" (Modified Locally)"
 	fi
 
 	echo "Config Version: $GIT_SHA [$COMMIT_DATE]$MODIFIED$STATUS"

@@ -36,7 +36,7 @@ __private_toolkit_version() {
 	# 2. Check for local modifications
 	local MODIFIED=""
 	if [ -n "$(git -C "$REPO_DIR" status --porcelain)" ]; then
-		MODIFIED=" (Modified)"
+		MODIFIED=" (Modified Locally)"
 	fi
 
 	echo "Toolkit Version: $GIT_SHA [$COMMIT_DATE]$MODIFIED$STATUS"
